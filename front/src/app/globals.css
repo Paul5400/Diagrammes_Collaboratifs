@@ -3,6 +3,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Landing Page Variables */
+  --bg-page: #0f0f11;
+  --bg-panel: #161618;
+  --bg-hover: #222225;
+  --text-primary: #ededed;
+  --text-secondary: #9ca3af;
+  --text-muted: #52525b;
+  --accent-primary: #7c3aed;
+  --accent-hover: #8b5cf6;
+  --accent-glow: rgba(124, 58, 237, 0.4);
+  --border-subtle: #27272a;
+  --border-focus: #52525b;
+  --font-ui: "Inter", sans-serif;
+  --font-code: "JetBrains Mono", monospace;
 }
 
 @theme inline {

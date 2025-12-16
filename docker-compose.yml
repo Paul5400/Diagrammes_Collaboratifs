@@ -12,8 +12,8 @@ services:
   
   back-diagrammer:
     build:
-      context: ./backend/build_docker/
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: build_docker/Dockerfile
     ports:
       - '${BACKEND_PORT:-3001}:3001'
     volumes:
@@ -32,8 +32,8 @@ services:
 
   front-diagrammer:
     build:
-      context: ./frontend/build_docker
-      dockerfile: Dockerfile
+      context: ./frontend
+      dockerfile: build_docker/Dockerfile
     ports:
       - '${FRONTEND_PORT:-3000}:3000'
     volumes:
@@ -66,9 +66,9 @@ services:
     image: redis:7-alpine
     command: redis-server --appendonly yes
     ports:
-      - '6379:6379'
+      - '${REDIS_PORT:-6379}:6379'
     networks:
-      - d${REDIS_PORT:-6379}ammer.net
+      - diagrammer.net
     volumes:
       - redis-data:/data
     restart: unless-stopped

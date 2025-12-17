@@ -10,8 +10,9 @@ volumes:
   back-node-modules:
   back-dist:
 
+
 services:
-  
+
   back-diagrammer:
     build:
       context: ./backend
@@ -30,12 +31,12 @@ services:
         condition: service_started
       redis:
         condition: service_started
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@diagrammer.db:5432/diagrammer?schema=public
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=3001
-    env_file:
-      - .env
     command: >
       sh -c "
         echo 'Attente de PostgreSQL...' &&
@@ -67,7 +68,9 @@ services:
       - back-diagrammer
     env_file:
       - .env
-    command: ["npm","run","dev","--","-H","0.0.0.0"]
+    environment:
+      - PORT=3000
+    command: [ "npm", "run", "dev", "--", "-H", "0.0.0.0" ]
     restart: unless-stopped
 
   diagrammer.db:

@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import { Github } from "lucide-react";
 import Image from "next/image";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3002";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 export default function LoginPage() {
   const router = useRouter();

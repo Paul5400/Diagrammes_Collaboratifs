@@ -2,7 +2,7 @@ import { Controller, Get, Req, UseGuards, Res, NotFoundException } from '@nestjs
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
-import { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { UserService } from '../user/user.service';
 
 @Controller('auth')
@@ -11,7 +11,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
-  ) {}
+  ) { }
 
   @Get('github')
   @UseGuards(AuthGuard('github'))
@@ -22,10 +22,15 @@ export class AuthController {
   @Get('github/callback')
   @UseGuards(AuthGuard('github'))
   async githubLoginCallback(@Req() req: FastifyRequest, @Res() res: FastifyReply) {
+    console.log('=== CONTROLLER CALLBACK CALLED ===');
     const passportUser = (req as any).user;
     const jwt = await this.authService.login(passportUser);
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl}/login?token=${jwt.access_token}`);
+
+    console.log('Redirecting to:', `${frontendUrl}/login?token=...`);
+
+    // Force 302 and explicit redirect
+    return res.status(302).redirect(`${frontendUrl}/login?token=${jwt.access_token}`);
   }
 
   @Get('me')

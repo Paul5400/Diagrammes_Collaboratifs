@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ================================
+// Modèle Utilisateur
+// ================================
+model Utilisateur {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @map("id_utilisateur") @db.Uuid
+  nom              String          @db.VarChar(50)
+  prenom           String          @db.VarChar(50)
+  email            String          @unique @db.VarChar(100)
+  motDePasse       String          @map("mot_de_passe") @db.VarChar(255)
+  role             Role            @default(utilisateur)
+  dateInscription  DateTime        @default(now()) @map("date_inscription") @db.Timestamp()
+  
+  // Relations
+  diagrammes       Diagramme[]     @relation("ProprietaireDiagramme")
+  collaborations   Collaboration[]
+
+  @@map("utilisateurs")
+}
+
+// ================================
+// Modèle Diagramme
+// ================================
+model Diagramme {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @map("id_diagramme") @db.Uuid
+  idProprietaire     String          @map("id_proprietaire") @db.Uuid
+  titre              String          @db.VarChar(100)
+  type               TypeDiagramme
+  cheminGit          String?         @map("chemin_git") @db.VarChar(255)
+  lienPartage        String          @unique @default(dbgenerated("gen_random_uuid()")) @map("lien_partage") @db.Uuid
+  public             Boolean         @default(false)
+  dateCreation       DateTime        @default(now()) @map("date_creation") @db.Timestamp()
+  dateModification   DateTime        @default(now()) @updatedAt @map("date_modification") @db.Timestamp()
+  
+  // Relations
+  proprietaire       Utilisateur     @relation("ProprietaireDiagramme", fields: [idProprietaire], references: [id], onDelete: Cascade)
+  collaborations     Collaboration[]
+
+  @@map("diagrammes")
+}
+
+// ================================
+// Modèle Collaboration
+// ================================
+model Collaboration {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @map("id_collaboration") @db.Uuid
+  idUtilisateur   String        @map("id_utilisateur") @db.Uuid
+  idDiagramme     String        @map("id_diagramme") @db.Uuid
+  droit           Droit         @default(lecture)
+  dateAjout       DateTime      @default(now()) @map("date_ajout") @db.Timestamp()
+  
+  // Relations
+  utilisateur     Utilisateur   @relation(fields: [idUtilisateur], references: [id], onDelete: Cascade)
+  diagramme       Diagramme     @relation(fields: [idDiagramme], references: [id], onDelete: Cascade)
+
+  @@unique([idUtilisateur, idDiagramme], name: "unique_utilisateur_diagramme")
+  @@map("collaborations")
+}
+
+// ================================
+// Enums
+// ================================
+enum Role {
+  utilisateur
+  admin
+}
+
+enum TypeDiagramme {
+  uml
+  sequence
+  flux
+  activite
+  classe
+  mermaid
+  plantuml
+  autre
+}
+
+enum Droit {
+  lecture
+  ecriture
+}

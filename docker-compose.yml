@@ -23,11 +23,25 @@ services:
     networks:
       - diagrammer.net
     depends_on:
-      - diagrammer.db
-      - redis
+      diagrammer.db:
+        condition: service_started
+      redis:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@diagrammer.db:5432/diagrammer?schema=public
+      - NODE_ENV=${NODE_ENV:-development}
     env_file:
       - .env
-    command: npm run start:dev
+    command: >
+      sh -c "
+        echo 'Attente de PostgreSQL...' &&
+        while ! nc -z diagrammer.db 5432; do sleep 1; done &&
+        echo 'PostgreSQL prêt!' &&
+        echo 'Génération du client Prisma...' &&
+        npx prisma generate &&
+        echo 'Démarrage de l application...' &&
+        npm run start:dev
+      "
     restart: unless-stopped
 
   front-diagrammer:

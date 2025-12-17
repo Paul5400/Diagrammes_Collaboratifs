@@ -1,5 +1,6 @@
-import Image from "next/image";
+
 import Link from "next/link";
+import { Logo } from "../components/Logo";
 
 export default function Home() {
   return (
@@ -7,10 +8,7 @@ export default function Home() {
       <div className="w-full max-w-[1200px] mx-auto p-8 flex-1">
         {/* Navigation */}
         <nav className="flex justify-between items-center pb-16">
-          <div className="flex items-center gap-2 font-semibold text-lg tracking-tight">
-            <Image src="/logo.png" alt="Logo" width={32} height={32} style={{ borderRadius: "8px" }} />
-            <span>Diagrammer</span>
-          </div>
+          <Logo size="md" />
           <div className="flex items-center gap-4">
             <Link href="#" className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]">
               Fonctionnalités

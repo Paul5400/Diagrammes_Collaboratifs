@@ -13,18 +13,22 @@ export class AuthController {
     @Get('github')
     @UseGuards(AuthGuard('github'))
     async githubLogin() {
-        // Initiates the GitHub OAuth flow
+        // Point d'entrée : Cette route redirige l'utilisateur vers la page de connexion GitHub.
+        // Le Guard 'github' gère automatiquement la construction de l'URL avec le Client ID.
     }
 
     @Get('github/callback')
     @UseGuards(AuthGuard('github'))
     async githubLoginCallback(@Req() req, @Res() res) {
-        // Handles the callback from GitHub
+        // Callback : GitHub redirige l'utilisateur ici après qu'il ait accepté.
+        // Le Guard vérifie le code renvoyé par GitHub, récupère le profil, et peuple 'req.user'.
+
+        // Génération du JWT pour notre application
         const jwt = await this.authService.login(req.user);
 
-        // Redirect to Frontend with Token
-        // TODO: Secure this better (Cookie vs Query Param)
-        // For MVP Week 2: Query Param is simplest.
+        // Redirection vers le Frontend avec le Token
+        // TODO: Sécuriser ce passage (Cookie HttpOnly serait mieux pour la prod),
+        // mais pour l'instant on le passe en Query Param pour simplifier le développement Frontend.
         const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
         res.redirect(`${frontendUrl}/login?token=${jwt.access_token}`);
     }

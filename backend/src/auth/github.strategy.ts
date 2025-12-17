@@ -19,16 +19,23 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     }
 
     async validate(accessToken: string, refreshToken: string, profile: Profile) {
-        // Ici, nous récupérons les infos de GitHub
-        // Nous les renvoyons à AuthService pour créer/trouver l'utilisateur
+        // Étape 1 : Récupération du profil GitHub envoyé par la stratégie Passport
+        // 'profile' contient les infos publiques de l'utilisateur (ID, Pseudo, Email, Avatar)
         const { id, username, photos, emails } = profile;
+
+        // Étape 2 : Communication avec le UserService
+        // Nous cherchons si cet utilisateur existe déjà dans notre base de données.
+        // Si oui, on le récupère et on met à jour son Access Token.
+        // Si non, on le crée.
         const user = await this.userService.findOrCreate({
             githubId: id,
             username: username,
             picture: photos && photos.length > 0 ? photos[0].value : null,
             email: emails && emails.length > 0 ? emails[0].value : null,
-            accessToken, // TRES IMPORTANT : On le garde pour isomorphic-git plus tard
+            accessToken, // IMPORTANT : On stocke le Token GitHub pour pouvoir cloner ses dépôts plus tard (via isomorphic-git)
         });
+
+        // Ce 'user' sera injecté dans l'objet 'req.user' des contrôleurs
         return user;
     }
 }

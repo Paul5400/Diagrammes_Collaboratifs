@@ -90,3 +90,19 @@ enum Droit {
   lecture
   ecriture
 }
+
+// ================================
+// GitHub OAuth users
+// ================================
+model GithubUser {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  githubId    String   @unique @map("github_id")
+  username    String?  @db.VarChar(150)
+  email       String?  @unique @db.VarChar(255)
+  avatarUrl   String?  @map("avatar_url") @db.VarChar(500)
+  accessToken String?  @map("access_token") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp()
+
+  @@map("github_users")
+}

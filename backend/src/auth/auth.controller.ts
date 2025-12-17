@@ -1,26 +1,49 @@
-import { Controller, Get, Req, UseGuards, Res } from @nestjs/common;
-import { AuthGuard } from @nestjs/passport;
-import { AuthService } from ./auth.service;
-import { ConfigService } from @nestjs/config;
+import { Controller, Get, Req, UseGuards, Res, NotFoundException } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { AuthService } from './auth.service';
+import { ConfigService } from '@nestjs/config';
+import { FastifyReply, FastifyRequest } from 'fastify';
+import { UserService } from '../user/user.service';
 
-@Controller(auth)
+@Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {}
 
-  @Get(github)
-  @UseGuards(AuthGuard(github))
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
   async githubLogin() {
     // Redirection automatique vers GitHub gérée par passport-github2
   }
 
-  @Get(github/callback)
-  @UseGuards(AuthGuard(github))
-  async githubLoginCallback(@Req() req, @Res() res) {
-    const jwt = await this.authService.login(req.user);
-    const frontendUrl = this.configService.get<string>(FRONTEND_URL) || http://localhost:3000;
-    res.redirect();
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubLoginCallback(@Req() req: FastifyRequest, @Res() res: FastifyReply) {
+    const passportUser = (req as any).user;
+    const jwt = await this.authService.login(passportUser);
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/login?token=${jwt.access_token}`);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  async getProfile(@Req() req: FastifyRequest) {
+    const payload = (req as any).user;
+    const githubId = payload?.sub;
+
+    if (!githubId) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    const user = await this.userService.findByGithubId(githubId);
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    const { accessToken, ...safeUser } = user;
+    return safeUser;
   }
 }

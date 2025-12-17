@@ -1,59 +1,41 @@
-import { Injectable } from @nestjs/common;
-import { randomUUID } from crypto;
-import { dirname } from path;
-import { mkdir, readFile, writeFile } from fs/promises;
+import { Injectable } from '@nestjs/common';
+import { Prisma, GithubUser } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 
-const DATA_PATH = process.cwd() + /backend/.data;
-const USERS_FILE = DATA_PATH + /users.json;
+export interface GithubProfilePayload {
+  githubId: string;
+  username?: string | null;
+  email?: string | null;
+  picture?: string | null;
+  accessToken?: string | null;
+}
 
 @Injectable()
 export class UserService {
-  private async ensureFile() {
-    try {
-      await mkdir(DATA_PATH, { recursive: true });
-      await readFile(USERS_FILE, { encoding: utf8 });
-    } catch (e) {
-      await writeFile(USERS_FILE, [], { encoding: utf8 });
-    }
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
-  private async readUsers() {
-    await this.ensureFile();
-    const raw = await readFile(USERS_FILE, { encoding: utf8 });
-    try {
-      return JSON.parse(raw || []);
-    } catch (e) {
-      return [];
-    }
-  }
-
-  private async writeUsers(users: any[]) {
-    await writeFile(USERS_FILE, JSON.stringify(users, null, 2), { encoding: utf8 });
-  }
-
-  async findOrCreate(payload: { githubId?: string; username?: string; picture?: string | null; email?: string | null; accessToken?: string; }) {
-    const users = await this.readUsers();
-    const existing = users.find(u => (payload.githubId && u.githubId === payload.githubId) || (payload.email && u.email === payload.email));
-    if (existing) {
-      // update token and profile
-      existing.username = payload.username ?? existing.username;
-      existing.picture = payload.picture ?? existing.picture;
-      existing.accessToken = payload.accessToken ?? existing.accessToken;
-      await this.writeUsers(users);
-      return existing;
-    }
-
-    const user = {
-      id: randomUUID(),
-      githubId: payload.githubId ?? null,
-      username: payload.username ?? null,
-      picture: payload.picture ?? null,
-      email: payload.email ?? null,
-      accessToken: payload.accessToken ?? null,
-      createdAt: new Date().toISOString(),
+  async findOrCreateFromGithub(profile: GithubProfilePayload): Promise<GithubUser> {
+    const data: Prisma.GithubUserCreateInput = {
+      githubId: profile.githubId,
+      username: profile.username ?? undefined,
+      email: profile.email ?? undefined,
+      avatarUrl: profile.picture ?? undefined,
+      accessToken: profile.accessToken ?? undefined,
     };
-    users.push(user);
-    await this.writeUsers(users);
-    return user;
+
+    return this.prisma.githubUser.upsert({
+      where: { githubId: profile.githubId },
+      update: {
+        username: profile.username ?? undefined,
+        email: profile.email ?? undefined,
+        avatarUrl: profile.picture ?? undefined,
+        accessToken: profile.accessToken ?? undefined,
+      },
+      create: data,
+    });
+  }
+
+  async findByGithubId(githubId: string): Promise<GithubUser | null> {
+    return this.prisma.githubUser.findUnique({ where: { githubId } });
   }
 }

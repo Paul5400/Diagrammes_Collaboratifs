@@ -29,7 +29,6 @@ export class AuthController {
 
     console.log('Redirecting to:', `${frontendUrl}/login?token=...`);
 
-    // Force 302 and explicit redirect
     return res.status(302).redirect(`${frontendUrl}/login?token=${jwt.access_token}`);
   }
 

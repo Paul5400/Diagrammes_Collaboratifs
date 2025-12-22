@@ -46,6 +46,8 @@ services:
         npm install &&
         echo 'Génération du client Prisma...' &&
         npx prisma generate &&
+        echo 'Synchronisation du schéma de la base de données...' &&
+        (npx prisma db push --accept-data-loss || npx prisma db push --force-reset) &&
         echo 'Démarrage de l application...' &&
         npm run start:dev
       "

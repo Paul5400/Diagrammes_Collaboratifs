@@ -11,17 +11,41 @@ import { UserMenu } from "../../components/UserMenu";
 export default function DashboardPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const token = Cookies.get("diagrammer_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-    setIsAuthenticated(true);
+    const fetchUser = async () => {
+      const token = Cookies.get("diagrammer_token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          setIsAuthenticated(true);
+        } else {
+          Cookies.remove("diagrammer_token");
+          router.push("/login");
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        router.push("/login");
+      }
+    };
+
+    fetchUser();
   }, [router]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return null;
   }
 
@@ -41,7 +65,12 @@ export default function DashboardPage() {
       <header className="w-full border-b border-[var(--border-subtle)]">
         <div className="max-w-[1200px] mx-auto flex items-center justify-between p-6">
           <Logo />
-          <UserMenu name="GitHub User" plan="GitHub OAuth" initials="GH" />
+          <UserMenu
+            name={user.username || "User"}
+            plan="GitHub Account"
+            initials={(user.username || "U").substring(0, 2).toUpperCase()}
+            avatarUrl={user.avatarUrl}
+          />
         </div>
       </header>
 

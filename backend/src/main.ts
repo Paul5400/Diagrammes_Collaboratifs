@@ -9,7 +9,8 @@ import { AllExceptionsFilter } from './all-exceptions.filter';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter()
+    new FastifyAdapter(),
+    { cors: true }
   );
 
   const fastifyInstance = app.getHttpAdapter().getInstance();

@@ -78,7 +78,7 @@ services:
   diagrammer.db:
     image: postgres:16-alpine
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - '15432:5432'
     networks:
       - diagrammer.net
     env_file:

@@ -49,3 +49,5 @@ out/
 
 # Documentation temporaire
 /Docs
+**/package-lock.json
+backend/package-lock.json

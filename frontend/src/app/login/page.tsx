@@ -51,7 +51,7 @@ export default function LoginPage() {
 
         <button
           onClick={handleLogin}
-          className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-[#24292e] text-white rounded-xl font-medium hover:bg-[#2f363d] transition-colors border border-[rgba(255,255,255,0.08)]"
+          className="cursor-pointer w-full flex items-center justify-center gap-3 px-4 py-4 bg-[#24292e] text-white rounded-xl font-medium hover:bg-[#2f363d] transition-colors border border-[rgba(255,255,255,0.08)]"
         >
           <Github size={20} />
           Continuer avec GitHub

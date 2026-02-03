@@ -39,16 +39,10 @@ services:
       - PORT=3001
     command: >
       sh -c "
-        echo 'Attente de PostgreSQL...' &&
         while ! nc -z diagrammer.db 5432; do sleep 1; done &&
-        echo 'PostgreSQL prêt!' &&
-        echo 'Installation des dépendances backend...' &&
-        npm install &&
-        echo 'Génération du client Prisma...' &&
+        npm install --include=dev &&
         npx prisma generate &&
-        echo 'Synchronisation du schéma de la base de données...' &&
-        (npx prisma db push --accept-data-loss || npx prisma db push --force-reset) &&
-        echo 'Démarrage de l application...' &&
+        npx prisma migrate deploy &&
         npm run start:dev
       "
     restart: unless-stopped
@@ -85,7 +79,6 @@ services:
       - .env
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./sql:/docker-entrypoint-initdb.d/
     restart: unless-stopped
 
   redis:

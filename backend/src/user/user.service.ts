@@ -1,41 +1,53 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, GithubUser } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
+import { GithubUser } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-
-export interface GithubProfilePayload {
-  githubId: string;
-  username?: string | null;
-  email?: string | null;
-  avatarUrl?: string | null;
-  accessToken?: string | null;
-}
+import { RedisService } from '../redis/redis.service';
+import { LoginDto } from './dto/loginDto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) { }
+  private readonly logger = new Logger(UserService.name);
 
-  async findOrCreateFromGithub(profile: GithubProfilePayload): Promise<GithubUser> {
-    const data: Prisma.GithubUserCreateInput = {
-      githubId: profile.githubId,
-      username: profile.username ?? undefined,
-      email: profile.email ?? undefined,
-      avatarUrl: profile.avatarUrl ?? undefined,
-      accessToken: profile.accessToken ?? undefined,
-    };
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService,
+  ) {}
 
-    return this.prisma.githubUser.upsert({
-      where: { githubId: profile.githubId },
-      update: {
-        username: profile.username ?? undefined,
-        email: profile.email ?? undefined,
-        avatarUrl: profile.avatarUrl ?? undefined,
-        accessToken: profile.accessToken ?? undefined,
-      },
-      create: data,
-    });
+  async findOrCreateFromGithub(profile: LoginDto): Promise<GithubUser> {
+    try {
+      if (profile.accessToken) {
+        await this.redis.storeGithubToken(profile.githubId, profile.accessToken);
+      }
+
+      const githubUser = await this.prisma.githubUser.upsert({
+        where: { githubId: profile.githubId },
+        update: {
+          username: profile.username,
+          email: profile.email,
+          avatarUrl: profile.avatarUrl,
+        },
+        create: {
+          githubId: profile.githubId,
+          username: profile.username,
+          email: profile.email,
+          avatarUrl: profile.avatarUrl,
+        },
+      });
+
+      this.logger.log(`GitHub user ${profile.githubId} processed`);
+      return githubUser;
+
+    } catch (error) {
+      this.logger.error(`Failed to process GitHub user: ${error.message}`);
+      throw error;
+    }
   }
 
   async findByGithubId(githubId: string): Promise<GithubUser | null> {
     return this.prisma.githubUser.findUnique({ where: { githubId } });
+  }
+
+  async getGithubAccessToken(githubId: string): Promise<string | null> {
+    return this.redis.getGithubToken(githubId);
   }
 }

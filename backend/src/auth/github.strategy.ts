@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-github2';
 import { ConfigService } from '@nestjs/config';
-import { UserService, GithubProfilePayload } from '../user/user.service';
+import { UserService} from '../user/user.service';
+import { LoginDto } from '../user/dto/loginDto';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
@@ -45,7 +46,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 		const email = profile.emails?.[0]?.value ?? null;
 		const avatarUrl = profile.photos?.[0]?.value ?? null;
 
-		const payload: GithubProfilePayload = {
+		const payload: LoginDto = {
 			githubId,
 			username,
 			email,

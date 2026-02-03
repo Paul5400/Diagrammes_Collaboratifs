@@ -24,7 +24,8 @@ export class AuthController {
   async githubLoginCallback(@Req() req: FastifyRequest, @Res() res: FastifyReply) {
     console.log('=== CONTROLLER CALLBACK CALLED ===');
     const passportUser = (req as any).user;
-    const jwt = await this.authService.login(passportUser);
+      const githubUser = await this.userService.findOrCreateFromGithub(passportUser);
+    const jwt = await this.authService.generateToken(githubUser);
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
 
     console.log('Redirecting to:', `${frontendUrl}/login?token=...`);

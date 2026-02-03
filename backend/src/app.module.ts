@@ -8,12 +8,14 @@ import { UserModule } from './user/user.module';
 import { DiagramModule } from './diagram/diagram.module';
 import { CollabModule } from './collab/collab.module';
 import { GitModule } from './git/git.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule, // ⚡ Module global Prisma (doit être en premier)
+    PrismaModule, 
     AuthModule,
+    RedisModule,
     UserModule,
     DiagramModule,
     CollabModule,

@@ -4,13 +4,13 @@ import { GithubUser } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
-  constructor(private jwtService: JwtService) {}
+  constructor(private jwtService: JwtService) { }
 
   async login(user: GithubUser) {
     const payload = {
       username: user.username,
       sub: user.githubId ?? user.id,
-      picture: user.picture ?? null,
+      avatarUrl: user.avatarUrl ?? null,
       accessToken: user.accessToken ?? null,
     };
 

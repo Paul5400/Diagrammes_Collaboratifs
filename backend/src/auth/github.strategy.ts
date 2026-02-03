@@ -43,13 +43,13 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
 		const githubId = profile.id?.toString();
 		const username = profile.username ?? profile.displayName ?? null;
 		const email = profile.emails?.[0]?.value ?? null;
-		const picture = profile.photos?.[0]?.value ?? null;
+		const avatarUrl = profile.photos?.[0]?.value ?? null;
 
 		const payload: GithubProfilePayload = {
 			githubId,
 			username,
 			email,
-			picture,
+			avatarUrl,
 			accessToken,
 		};
 

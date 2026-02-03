@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@nestjs/platform-express": "^11.1.12",
+    "express": "^5.2.1"
+  }
+}

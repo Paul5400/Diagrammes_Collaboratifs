@@ -6,20 +6,20 @@ export interface GithubProfilePayload {
   githubId: string;
   username?: string | null;
   email?: string | null;
-  picture?: string | null;
+  avatarUrl?: string | null;
   accessToken?: string | null;
 }
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findOrCreateFromGithub(profile: GithubProfilePayload): Promise<GithubUser> {
     const data: Prisma.GithubUserCreateInput = {
       githubId: profile.githubId,
       username: profile.username ?? undefined,
       email: profile.email ?? undefined,
-      avatarUrl: profile.picture ?? undefined,
+      avatarUrl: profile.avatarUrl ?? undefined,
       accessToken: profile.accessToken ?? undefined,
     };
 
@@ -28,7 +28,7 @@ export class UserService {
       update: {
         username: profile.username ?? undefined,
         email: profile.email ?? undefined,
-        avatarUrl: profile.picture ?? undefined,
+        avatarUrl: profile.avatarUrl ?? undefined,
         accessToken: profile.accessToken ?? undefined,
       },
       create: data,

@@ -1,59 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
 @import "tailwindcss";
-/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap'); */
-
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --background: #ffffff;
+    --foreground: #171717;
 
-  /* Landing Page Variables */
-  --bg-page: #0f0f11;
-  --bg-panel: #161618;
-  --bg-hover: #222225;
-  --text-primary: #ededed;
-  --text-secondary: #9ca3af;
-  --text-muted: #52525b;
-  --accent-primary: #7c3aed;
-  --accent-hover: #8b5cf6;
-  --accent-glow: rgba(124, 58, 237, 0.4);
-  --border-subtle: #27272a;
-  --border-focus: #52525b;
-  --font-ui: "Inter", sans-serif;
-  --font-code: "JetBrains Mono", monospace;
+    /* Landing Page Variables */
+    --bg-page: #0f0f11;
+    --bg-panel: #161618;
+    --bg-hover: #222225;
+    --text-primary: #ededed;
+    --text-secondary: #9ca3af;
+    --text-muted: #52525b;
+    --accent-primary: #7c3aed;
+    --accent-hover: #8b5cf6;
+    --accent-glow: rgba(124, 58, 237, 0.4);
+    --border-subtle: #27272a;
+    --border-focus: #52525b;
+    --font-ui: "Inter", sans-serif;
+    --font-code: "JetBrains Mono", monospace;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
 }
 
 body {
-  background: var(--bg-page);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 /* Utilities */
-.hidden { display: none !important; }
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.gap-sm { gap: var(--space-sm); }
-.gap-md { gap: var(--space-md); }
-.text-center { text-align: center; }
+.hidden {
+    display: none !important;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-col {
+    flex-direction: column;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.gap-sm {
+    gap: var(--space-sm);
+}
+
+.gap-md {
+    gap: var(--space-md);
+}
+
+.text-center {
+    text-align: center;
+}
 
 /* Buttons */
 .btn {
@@ -127,7 +155,7 @@ body {
     padding: var(--space-xl);
     /* Allow scrolling for these pages */
     flex: 1;
-    overflow-y: auto; 
+    overflow-y: auto;
 }
 
 .nav-header {
@@ -230,4 +258,14 @@ body {
 .card-meta {
     font-size: 12px;
     color: var(--text-muted);
+}
+
+/* Hide Mermaid's default intrusive error messages */
+#mermaid-error-id,
+.error-icon,
+.error-text,
+[id^="mermaid-"] text.error-text,
+[id^="mermaid-"] .error-icon,
+[id^="mermaid-"] .error-text {
+    display: none !important;
 }

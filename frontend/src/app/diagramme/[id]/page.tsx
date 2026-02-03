@@ -1,3 +1,5 @@
+import { DiagramEditor } from "../../../components/DiagramEditor";
+
 export default async function DiagramPage({
   params,
 }: {
@@ -5,10 +7,10 @@ export default async function DiagramPage({
 }) {
   const resolvedParams = await params;
   const { id } = resolvedParams;
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Diagramme {id}</h1>
-      <p>Zone d'édition du diagramme.</p>
+    <div className="h-screen w-screen overflow-hidden">
+      <DiagramEditor id={id} />
     </div>
   );
 }

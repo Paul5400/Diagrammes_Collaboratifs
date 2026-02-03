@@ -14,13 +14,14 @@ volumes:
 services:
 
   back-diagrammer:
+    platform: linux/amd64
     build:
       context: ./backend
       dockerfile: build_docker/Dockerfile
     ports:
       - '${BACKEND_PORT:-3002}:${PORT:-3001}'
     volumes:
-      - ./backend:/app
+      - ./backend:/app:delegated
       - back-node-modules:/app/node_modules
       - back-dist:/app/dist
     working_dir: /app
@@ -42,19 +43,20 @@ services:
         while ! nc -z diagrammer.db 5432; do sleep 1; done &&
         npm install --include=dev &&
         npx prisma generate &&
-        npx prisma migrate deploy &&
+        (npx prisma migrate deploy || npx prisma db push) &&
         npm run start:dev
       "
     restart: unless-stopped
 
   front-diagrammer:
+    platform: linux/amd64
     build:
       context: ./frontend
       dockerfile: build_docker/Dockerfile
     ports:
       - '${FRONTEND_PORT:-3000}:3000'
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app:delegated
       - front-node-modules:/app/node_modules
       - front-next:/app/.next
     working_dir: /app
@@ -66,7 +68,11 @@ services:
       - .env
     environment:
       - PORT=3000
-    command: [ "npm", "run", "dev", "--", "-H", "0.0.0.0" ]
+    command: >
+      sh -c "
+        npm install &&
+        npm run dev -- -H 0.0.0.0
+      "
     restart: unless-stopped
 
   diagrammer.db:

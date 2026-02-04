@@ -22,10 +22,32 @@ model Utilisateur {
   dateInscription  DateTime        @default(now()) @map("date_inscription") @db.Timestamp()
   
   // Relations
+  projets          Projet[]        @relation("ProprietaireProjet")
   diagrammes       Diagramme[]     @relation("ProprietaireDiagramme")
   collaborations   Collaboration[]
 
   @@map("utilisateurs")
+}
+
+// ================================
+// Modèle Projet
+// ================================
+model Projet {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @map("id_projet") @db.Uuid
+  idProprietaire     String          @map("id_proprietaire") @db.Uuid
+  titre              String          @db.VarChar(150)
+  description        String?         @db.Text
+  cheminGit          String?         @map("chemin_git") @db.VarChar(255)
+  public             Boolean         @default(false)
+  dateCreation       DateTime        @default(now()) @map("date_creation") @db.Timestamp()
+  dateModification   DateTime        @default(now()) @updatedAt @map("date_modification") @db.Timestamp()
+  
+  // Relations
+  proprietaire       Utilisateur     @relation("ProprietaireProjet", fields: [idProprietaire], references: [id], onDelete: Cascade)
+  diagrammes         Diagramme[]     @relation("ProjetDiagrammes")
+  collaborations     Collaboration[] @relation("ProjetCollaborations")
+
+  @@map("projets")
 }
 
 // ================================
@@ -34,8 +56,10 @@ model Utilisateur {
 model Diagramme {
   id                 String          @id @default(dbgenerated("gen_random_uuid()")) @map("id_diagramme") @db.Uuid
   idProprietaire     String          @map("id_proprietaire") @db.Uuid
+  idProjet           String?         @map("id_projet") @db.Uuid
   titre              String          @db.VarChar(100)
   type               TypeDiagramme
+  contenu            String?         @db.Text
   cheminGit          String?         @map("chemin_git") @db.VarChar(255)
   lienPartage        String          @unique @default(dbgenerated("gen_random_uuid()")) @map("lien_partage") @db.Uuid
   public             Boolean         @default(false)
@@ -44,6 +68,7 @@ model Diagramme {
   
   // Relations
   proprietaire       Utilisateur     @relation("ProprietaireDiagramme", fields: [idProprietaire], references: [id], onDelete: Cascade)
+  projet             Projet?         @relation("ProjetDiagrammes", fields: [idProjet], references: [id], onDelete: Cascade)
   collaborations     Collaboration[]
 
   @@map("diagrammes")
@@ -55,15 +80,17 @@ model Diagramme {
 model Collaboration {
   id              String        @id @default(dbgenerated("gen_random_uuid()")) @map("id_collaboration") @db.Uuid
   idUtilisateur   String        @map("id_utilisateur") @db.Uuid
-  idDiagramme     String        @map("id_diagramme") @db.Uuid
+  idProjet        String?       @map("id_projet") @db.Uuid
+  idDiagramme     String?       @map("id_diagramme") @db.Uuid
   droit           Droit         @default(lecture)
   dateAjout       DateTime      @default(now()) @map("date_ajout") @db.Timestamp()
   
   // Relations
   utilisateur     Utilisateur   @relation(fields: [idUtilisateur], references: [id], onDelete: Cascade)
-  diagramme       Diagramme     @relation(fields: [idDiagramme], references: [id], onDelete: Cascade)
+  projet          Projet?       @relation("ProjetCollaborations", fields: [idProjet], references: [id], onDelete: Cascade)
+  diagramme       Diagramme?    @relation(fields: [idDiagramme], references: [id], onDelete: Cascade)
 
-  @@unique([idUtilisateur, idDiagramme], name: "unique_utilisateur_diagramme")
+  @@unique([idUtilisateur, idProjet], name: "unique_utilisateur_projet")
   @@map("collaborations")
 }
 

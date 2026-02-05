@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { EditorHeader } from './EditorHeader';
 import { MermaidPreview } from './MermaidPreview';
 import { CollaborativeEditorRef } from './CollaborativeEditor';
 import { useAuth } from '@/context/AuthContext';
 
+// dynamic : import différé, désactive le SSR pour Monaco Editor 
 const CollaborativeEditor = dynamic(
     () => import('./CollaborativeEditor').then((mod) => mod.CollaborativeEditor),
     { ssr: false }
@@ -31,7 +32,8 @@ const DEFAULT_CODE = `sequenceDiagram
 export function DiagramEditor({ id }: DiagramEditorProps) {
     const [code, setCode] = useState(DEFAULT_CODE);
     const { user } = useAuth();
-    const editorRef = React.useRef<CollaborativeEditorRef>(null);
+    // useRef : référence au composant enfant pour appeler ses méthodes
+    const editorRef = useRef<CollaborativeEditorRef>(null);
 
     return (
         <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">

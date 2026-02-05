@@ -4,14 +4,17 @@ import { useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
 import debounce from 'lodash.debounce';
 
+// Hook pour valider la syntaxe Mermaid et afficher les erreurs dans Monaco
 export function useMermaidValidation(editor: any, monaco: any) {
     const validate = useCallback(async (content: string) => {
         if (!editor || !monaco || !content || !content.trim()) {
+            // Efface les marqueurs d'erreur si le contenu est vide
             if (editor && monaco) monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', []);
             return;
         }
 
         try {
+            // Validation de la syntaxe avec Mermaid
             await mermaid.parse(content, { suppressErrors: true });
             monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', []);
         } catch (err: any) {
@@ -36,6 +39,7 @@ export function useMermaidValidation(editor: any, monaco: any) {
         }
     }, [editor, monaco]);
 
+    // Limite les appels à validate (500ms après la dernière frappe)
     const debouncedValidate = useCallback(debounce(validate, 500), [validate]);
 
     useEffect(() => {

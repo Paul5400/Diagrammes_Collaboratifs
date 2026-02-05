@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
 
+  // useEffect : vérification de l'authentification au chargement de la page
   useEffect(() => {
     const fetchUser = async () => {
       const token = Cookies.get("diagrammer_token");

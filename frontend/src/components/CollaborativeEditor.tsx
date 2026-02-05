@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useState, useImperativeHandle, forwardRef} from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { useYjs } from '@/hooks/useYjs';
 import { useMermaidValidation } from '@/hooks/useMermaidValidation';
@@ -12,11 +12,13 @@ interface CollaborativeEditorProps {
     defaultValue?: string;
 }
 
+// Interface pour exposer des méthodes au parent via ref
 export interface CollaborativeEditorRef {
     setContent: (content: string) => void;
 }
 
-export const CollaborativeEditor = React.forwardRef<CollaborativeEditorRef, CollaborativeEditorProps>(
+// forwardRef : permet au parent d'accéder aux méthodes du composant via ref
+export const CollaborativeEditor = forwardRef<CollaborativeEditorRef, CollaborativeEditorProps>(
     ({ id, onChange, defaultValue = "" }, ref) => {
         const [editor, setEditor] = useState<any>(null);
         const [monaco, setMonaco] = useState<Monaco | null>(null);
@@ -24,17 +26,20 @@ export const CollaborativeEditor = React.forwardRef<CollaborativeEditorRef, Coll
         const { setContent } = useYjs(id, editor);
         useMermaidValidation(editor, monaco);
 
-        React.useImperativeHandle(ref, () => ({
+        // Expose setContent au parent via ref
+        useImperativeHandle(ref, () => ({
             setContent,
         }));
 
+        // Callback appelé quand Monaco Editor est monté dans le DOM
         function handleEditorDidMount(editorInstance: any, monacoInstance: Monaco) {
             setEditor(editorInstance);
             setMonaco(monacoInstance);
 
-            // Configuration de l'éditeur pour Mermaid
+            // Enregistrement du langage Mermaid dans Monaco
             monacoInstance.languages.register({ id: 'mermaid' });
 
+            // Configuration de l'autocomplétion pour les mots-clés Mermaid
             monacoInstance.languages.registerCompletionItemProvider('mermaid', {
                 provideCompletionItems: (model, position) => {
                     const suggestions = MERMAID_KEYWORDS.map(k => ({
@@ -52,6 +57,7 @@ export const CollaborativeEditor = React.forwardRef<CollaborativeEditorRef, Coll
                 }
             });
 
+            // Propagation des changements au parent à chaque modification
             editorInstance.onDidChangeModelContent(() => {
                 onChange(editorInstance.getValue());
             });

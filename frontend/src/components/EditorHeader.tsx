@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Share2, Download, GitBranch, Users, ChevronDown, Layout } from 'lucide-react';
 import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
@@ -12,7 +12,7 @@ interface EditorHeaderProps {
 }
 
 export function EditorHeader({ title, className = "", onSelectTemplate, user }: EditorHeaderProps) {
-    const [isTemplatesOpen, setIsTemplatesOpen] = React.useState(false);
+    const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
     return (
         <header className={`h-14 border-b border-[var(--border-subtle)] bg-[#0f0f11]/80 backdrop-blur-md flex items-center justify-between px-4 z-50 ${className}`}>
             <div className="flex items-center gap-6">

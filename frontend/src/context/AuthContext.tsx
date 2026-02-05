@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import Cookies from 'js-cookie';
 
 interface AuthContextType {
@@ -10,9 +10,11 @@ interface AuthContextType {
     refreshUser: () => Promise<void>;
 }
 
+// Permet de partager l'état utilisateur dans toute l'app
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+// Provider : composant qui fournit le contexte à ses enfants
+export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    // useEffect avec tableau vide : s'exécute une seule fois au montage
     useEffect(() => {
         fetchUser();
     }, []);
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
+// Hook personnalisé pour accéder au contexte d'authentification
 export function useAuth() {
     const context = useContext(AuthContext);
     if (context === undefined) {

@@ -6,8 +6,7 @@ import { HocuspocusProvider } from '@hocuspocus/provider';
 import { MonacoBinding } from 'y-monaco';
 
 // Hook pour gérer la collaboration temps réel avec Yjs et WebSocket
-export function useYjs(id: string, editor: any) {
-    // useRef : conserve les instances sans déclencher de re-render
+export function useYjs(id: string, editor: any, defaultValue: string = '') {
     const providerRef = useRef<HocuspocusProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
     const [ytext, setYtext] = useState<Y.Text | null>(null);
@@ -40,14 +39,18 @@ export function useYjs(id: string, editor: any) {
 
         bindingRef.current = binding;
 
-        // Fonction de nettoyage : appelée au démontage du composant
+        // Si le document Yjs est vide, initialiser avec defaultValue
+        if (type.toString() === '' && defaultValue) {
+            type.insert(0, defaultValue);
+        }
+
         return () => {
             provider.destroy();
             binding.destroy();
             providerRef.current = null;
             bindingRef.current = null;
         };
-    }, [id, editor]); // Dépendances : re-exécute si id ou editor change
+    }, [id, editor, defaultValue]);
 
     const setContent = (content: string) => {
         if (ytext) {

@@ -23,7 +23,7 @@ export const CollaborativeEditor = forwardRef<CollaborativeEditorRef, Collaborat
         const [editor, setEditor] = useState<any>(null);
         const [monaco, setMonaco] = useState<Monaco | null>(null);
 
-        const { setContent } = useYjs(id, editor);
+        const { setContent } = useYjs(id, editor, defaultValue);
         useMermaidValidation(editor, monaco);
 
         // Expose setContent au parent via ref

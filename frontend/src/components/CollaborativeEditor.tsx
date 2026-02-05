@@ -21,7 +21,7 @@ export const CollaborativeEditor = React.forwardRef<CollaborativeEditorRef, Coll
         const [editor, setEditor] = useState<any>(null);
         const [monaco, setMonaco] = useState<Monaco | null>(null);
 
-        const { setContent } = useYjs(id, editor);
+        const { setContent } = useYjs(id, editor, defaultValue);
         useMermaidValidation(editor, monaco);
 
         React.useImperativeHandle(ref, () => ({

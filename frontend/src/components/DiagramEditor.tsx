@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { EditorHeader } from './EditorHeader';
 import { MermaidPreview } from './MermaidPreview';
 import { CollaborativeEditorRef } from './CollaborativeEditor';
-import Cookies from 'js-cookie';
+import { useAuth } from '@/context/AuthContext';
 
 const CollaborativeEditor = dynamic(
     () => import('./CollaborativeEditor').then((mod) => mod.CollaborativeEditor),
@@ -30,32 +30,8 @@ const DEFAULT_CODE = `sequenceDiagram
 
 export function DiagramEditor({ id }: DiagramEditorProps) {
     const [code, setCode] = useState(DEFAULT_CODE);
-    const [user, setUser] = useState<any>(null);
+    const { user } = useAuth();
     const editorRef = React.useRef<CollaborativeEditorRef>(null);
-
-    React.useEffect(() => {
-        const fetchUser = async () => {
-            const token = Cookies.get("diagrammer_token");
-            if (!token) return;
-
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                if (response.ok) {
-                    const userData = await response.json();
-                    setUser(userData);
-                }
-            } catch (error) {
-                console.error("Error fetching user:", error);
-            }
-        };
-
-        fetchUser();
-    }, []);
 
     return (
         <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">

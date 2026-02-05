@@ -32,7 +32,10 @@ const DEFAULT_CODE = `sequenceDiagram
 export function DiagramEditor({ id }: DiagramEditorProps) {
     const [code, setCode] = useState(DEFAULT_CODE);
     const { user } = useAuth();
+<<<<<<< HEAD
     // useRef : référence au composant enfant pour appeler ses méthodes
+=======
+>>>>>>> fff01b1d (feat: importe useRef the same way than useState)
     const editorRef = useRef<CollaborativeEditorRef>(null);
 
     return (

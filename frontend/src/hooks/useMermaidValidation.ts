@@ -3,9 +3,12 @@
 import { useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
 import debounce from 'lodash.debounce';
+import { Monaco } from '@monaco-editor/react';
+import { editor } from 'monaco-editor';
+import { APP_CONFIG } from '@/config/AppConfig';
 
 // Hook pour valider la syntaxe Mermaid et afficher les erreurs dans Monaco
-export function useMermaidValidation(editor: any, monaco: any) {
+export function useMermaidValidation(editor: editor.IStandaloneCodeEditor | null, monaco: Monaco | null) {
     const validate = useCallback(async (content: string) => {
         if (!editor || !monaco || !content || !content.trim()) {
             // Efface les marqueurs d'erreur si le contenu est vide
@@ -17,8 +20,8 @@ export function useMermaidValidation(editor: any, monaco: any) {
             // Validation de la syntaxe avec Mermaid
             await mermaid.parse(content, { suppressErrors: true });
             monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', []);
-        } catch (err: any) {
-            const errorMsg = err.message || 'Syntax Error';
+        } catch (err: unknown) {
+            const errorMsg = (err as Error).message || 'Syntax Error';
             const markers = [{
                 severity: monaco.MarkerSeverity.Error,
                 message: errorMsg,
@@ -39,8 +42,8 @@ export function useMermaidValidation(editor: any, monaco: any) {
         }
     }, [editor, monaco]);
 
-    // Limite les appels à validate (500ms après la dernière frappe)
-    const debouncedValidate = useCallback(debounce(validate, 500), [validate]);
+    // Limite les appels à validate (utilisation de la constante centralisée)
+    const debouncedValidate = useCallback(debounce(validate, APP_CONFIG.VALIDATION_DEBOUNCE_MS), [validate]);
 
     useEffect(() => {
         if (!editor || !monaco) return;

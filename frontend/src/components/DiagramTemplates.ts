@@ -1,8 +1,10 @@
+import { MermaidCode } from "@/types/DiagramTypes";
+
 export interface DiagramTemplate {
     id: string;
     label: string;
     icon: string;
-    code: string;
+    code: MermaidCode;
 }
 
 export const DIAGRAM_TEMPLATES: DiagramTemplate[] = [

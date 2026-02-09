@@ -3,25 +3,34 @@ import { Share2, Download, GitBranch, Users, ChevronDown, Layout } from 'lucide-
 import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
 import { DIAGRAM_TEMPLATES, DiagramTemplate } from './DiagramTemplates';
+import { User } from '@/context/AuthContext';
 
 interface EditorHeaderProps {
-    title: string;
+    projectTitleLabel: string;
     className?: string;
-    onSelectTemplate: (template: DiagramTemplate) => void;
-    user?: any;
+    onSelectTemplateCallback: (selectedTemplateObject: DiagramTemplate) => void;
+    currentUserData?: User | null;
 }
 
-export function EditorHeader({ title, className = "", onSelectTemplate, user }: EditorHeaderProps) {
-    const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+export function EditorHeader(props: EditorHeaderProps) {
+    // On reçoit l'unique objet 'props' et on pioche manuellement dedans
+    const currentProjectTitle = props.projectTitleLabel;
+    const handleTemplateSelectionAction = props.onSelectTemplateCallback;
+    const authenticatedUserInformation = props.currentUserData;
+    const customComponentClassName = props.className || "";
+
+    // État local pour gérer la visibilité du menu déroulant des templates
+    const [isTemplateSelectionMenuVisible, setTemplateSelectionMenuVisibility] = useState(false);
+
     return (
-        <header className={`h-14 border-b border-[var(--border-subtle)] bg-[#0f0f11]/80 backdrop-blur-md flex items-center justify-between px-4 z-50 ${className}`}>
+        <header className={`h-14 border-b border-[var(--border-subtle)] bg-[#0f0f11]/80 backdrop-blur-md flex items-center justify-between px-4 z-50 ${customComponentClassName}`}>
             <div className="flex items-center gap-6">
                 <Logo />
 
                 <div className="h-4 w-[1px] bg-[var(--border-subtle)]" />
 
                 <div className="flex flex-col">
-                    <h1 className="text-sm font-semibold text-white tracking-tight leading-tight">{title}</h1>
+                    <h1 className="text-sm font-semibold text-white tracking-tight leading-tight">{currentProjectTitle}</h1>
                     <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="flex items-center gap-1 opacity-80">
@@ -35,25 +44,25 @@ export function EditorHeader({ title, className = "", onSelectTemplate, user }: 
 
                 <div className="relative">
                     <button
-                        onClick={() => setIsTemplatesOpen(!isTemplatesOpen)}
+                        onClick={() => setTemplateSelectionMenuVisibility(!isTemplateSelectionMenuVisible)}
                         className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[#1a1a1d] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all text-xs">
                         <Layout size={14} />
                         Templates
-                        <ChevronDown size={14} className={`transition-transform ${isTemplatesOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={14} className={`transition-transform ${isTemplateSelectionMenuVisible ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {isTemplatesOpen && (
+                    {isTemplateSelectionMenuVisible && (
                         <div className="absolute top-full left-0 mt-2 w-56 bg-[#0f0f11] border border-[var(--border-subtle)] rounded-xl shadow-2xl overflow-hidden py-1.5 animate-in fade-in zoom-in-95 duration-100">
-                            {DIAGRAM_TEMPLATES.map((t) => (
+                            {DIAGRAM_TEMPLATES.map((currentIterationTemplate) => (
                                 <button
-                                    key={t.id}
+                                    key={currentIterationTemplate.id}
                                     onClick={() => {
-                                        onSelectTemplate(t);
-                                        setIsTemplatesOpen(false);
+                                        handleTemplateSelectionAction(currentIterationTemplate);
+                                        setTemplateSelectionMenuVisibility(false);
                                     }}
                                     className="w-full flex items-center gap-3 px-3 py-2 text-left text-xs text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-hover)] transition-colors">
-                                    <span className="text-lg">{t.icon}</span>
-                                    {t.label}
+                                    <span className="text-lg">{currentIterationTemplate.icon}</span>
+                                    {currentIterationTemplate.label}
                                 </button>
                             ))}
                         </div>
@@ -63,8 +72,8 @@ export function EditorHeader({ title, className = "", onSelectTemplate, user }: 
 
             <div className="flex items-center gap-3">
                 <div className="flex -space-x-2 mr-2">
-                    {[1, 2].map((i) => (
-                        <div key={i} className="w-7 h-7 rounded-full border-2 border-[#0f0f11] bg-[var(--accent-primary)] flex items-center justify-center text-[10px] text-white">
+                    {[1, 2].map((userAvatarPlaceholderIndex) => (
+                        <div key={userAvatarPlaceholderIndex} className="w-7 h-7 rounded-full border-2 border-[#0f0f11] bg-[var(--accent-primary)] flex items-center justify-center text-[10px] text-white">
                             JD
                         </div>
                     ))}
@@ -85,10 +94,10 @@ export function EditorHeader({ title, className = "", onSelectTemplate, user }: 
                 <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />
 
                 <UserMenu
-                    name={user?.username || 'User'}
+                    name={authenticatedUserInformation?.username || 'Guest User'}
                     plan="GitHub Account"
-                    initials={(user?.username || 'U').substring(0, 2).toUpperCase()}
-                    avatarUrl={user?.avatarUrl}
+                    initials={(authenticatedUserInformation?.username || 'G').substring(0, 2).toUpperCase()}
+                    avatarUrl={authenticatedUserInformation?.avatarUrl}
                 />
             </div>
         </header>

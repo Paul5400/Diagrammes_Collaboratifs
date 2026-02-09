@@ -4,9 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import * as Y from 'yjs';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import { MonacoBinding } from 'y-monaco';
+import { editor } from 'monaco-editor';
+import { DiagramId, MermaidCode } from '@/types/DiagramTypes';
+import { APP_CONFIG } from '@/config/AppConfig';
 
 // Hook pour gérer la collaboration temps réel avec Yjs et WebSocket
-export function useYjs(id: string, editor: any, defaultValue: string = '') {
+export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | null, defaultValue: MermaidCode = '') {
     const providerRef = useRef<HocuspocusProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
     const [ytext, setYtext] = useState<Y.Text | null>(null);
@@ -19,7 +22,7 @@ export function useYjs(id: string, editor: any, defaultValue: string = '') {
         const ydoc = new Y.Doc();
         // Connexion WebSocket pour la synchronisation temps réel
         const provider = new HocuspocusProvider({
-            url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
+            url: APP_CONFIG.WEBSOCKET_URL,
             name: `diagram-${id}`,
             document: ydoc,
         });

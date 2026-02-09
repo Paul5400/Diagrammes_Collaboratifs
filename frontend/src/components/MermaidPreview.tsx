@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useDiagramPanZoom } from '@/hooks/useDiagramPanZoom';
+import { MermaidCode } from '@/types/DiagramTypes';
+import { APP_CONFIG } from '@/config/AppConfig';
 
-mermaid.initialize({
+/**
+ * CONFIGURATION STATIQUE : MERMAID
+ * On configure le moteur de rendu Mermaid avec un thème sombre personnalisé
+ * pour qu'il s'intègre parfaitement à l'UI.
+ */
+const MERMAID_CONFIG = {
     startOnLoad: false,
     theme: 'dark',
     suppressErrorConsole: true,
@@ -34,59 +41,96 @@ mermaid.initialize({
     },
     securityLevel: 'loose',
     fontFamily: 'Inter, sans-serif',
-});
+};
+
+// Initialisation globale de Mermaid
+mermaid.initialize(MERMAID_CONFIG);
 
 interface MermaidPreviewProps {
-    code: string;
+    mermaidCodeSource: MermaidCode; // Le code texte Mermaid à transformer en SVG
 }
 
-export function MermaidPreview({ code }: MermaidPreviewProps) {
-    const [svg, setSvg] = useState<string>('');
-    const {
-        zoom, pan, handleMouseDown, handleMouseMove, handleMouseUp,
-        reset, zoomIn, zoomOut
-    } = useDiagramPanZoom();
+/**
+ * COMPOSANT : MermaidPreview
+ * Responsable du rendu visuel du diagramme.
+ * Gère également les interactions de Zoom et de Déplacement (Pan).
+ */
+export function MermaidPreview(props: MermaidPreviewProps) {
+    // On reçoit l'unique objet 'props' et on récupère le code manuellement
+    const currentMermaidSourceCode = props.mermaidCodeSource;
 
-    useEffect(() => {
-        const renderDiagram = async () => {
-            if (!code.trim()) {
-                setSvg('');
+    // État contenant le code SVG généré par Mermaid
+    const [renderedSvgMarkupContent, setRenderedSvgMarkupContent] = useState<string>('');
+
+    // Hook personnalisé pour gérer la manipulation de la souris (zoom/déplacement)
+    const diagramInteractions = useDiagramPanZoom();
+
+    // Extraction manuelle des outils d'interaction
+    const zoom = diagramInteractions.zoom;
+    const pan = diagramInteractions.pan;
+    const handleMouseDown = diagramInteractions.handleMouseDown;
+    const handleMouseMove = diagramInteractions.handleMouseMove;
+    const handleMouseUp = diagramInteractions.handleMouseUp;
+    const zoomIn = diagramInteractions.zoomIn;
+    const zoomOut = diagramInteractions.zoomOut;
+    const reset = diagramInteractions.reset;
+
+    /**
+     * FONCTION : generateAsynchronousMermaidSvg
+     * Convertit le texte brut en SVG de manière asynchrone.
+     * @param rawMermaidCode Le code source du diagramme
+     */
+    const generateAsynchronousMermaidSvg = useCallback(async (rawMermaidCode: MermaidCode) => {
+        if (!rawMermaidCode.trim()) {
+            setRenderedSvgMarkupContent('');
+            return;
+        }
+
+        try {
+            // 1. On vérifie si Mermaid arrive à lire le code (sans planter)
+            const isSyntaxValid = await mermaid.parse(rawMermaidCode, { suppressErrors: true });
+            if (!isSyntaxValid) return;
+
+            // 2. On génère un ID unique pour éviter les conflits de cache SVG
+            const uniqueSvgContainerId = `mermaid-svg-container-${Math.random().toString(36).substring(2, 11)}`;
+
+            // 3. Demande à Mermaid de générer le rendu SVG
+            const { svg: generatedSvgOutput } = await mermaid.render(uniqueSvgContainerId, rawMermaidCode);
+
+            // 4. On ignore le résultat si Mermaid a généré une erreur visuelle interne
+            if (generatedSvgOutput.includes('class="error-icon"') || generatedSvgOutput.includes('Syntax error')) {
                 return;
             }
 
-            try {
-                // Valider d'abord
-                const isValid = await mermaid.parse(code, { suppressErrors: true });
-                if (!isValid) return;
+            // Mise à jour de l'affichage graphique
+            setRenderedSvgMarkupContent(generatedSvgOutput);
+        } catch (renderingProcessError) {
+            // En silence pour éviter de saccader l'UI pendant que l'utilisateur tape
+            console.debug('Mermaid render error (ignored for stability):', renderingProcessError);
+        }
+    }, []);
 
-                const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-                const { svg: renderedSvg } = await mermaid.render(id, code);
-
-                // Vérifier si le SVG généré contient une erreur
-                if (renderedSvg.includes('class="error-icon"') || renderedSvg.includes('Syntax error')) {
-                    return;
-                }
-
-                setSvg(renderedSvg);
-            } catch (err: any) {
-                // On ne change rien au SVG pour garder le dernier état valide
-            }
-        };
-
-        const timeout = setTimeout(renderDiagram, 150);
-        return () => clearTimeout(timeout);
-    }, [code]);
+    /**
+     * EFFET : Mise à jour avec Debounce
+     * Pour éviter de recalculer le diagramme à chaque touche (trop lourd),
+     * on attend que l'utilisateur arrête de taper pendant un temps défini.
+     */
+    useEffect(() => {
+        const debounceUpdateTimer = setTimeout(() => generateAsynchronousMermaidSvg(currentMermaidSourceCode), APP_CONFIG.RENDER_DEBOUNCE_MS);
+        return () => clearTimeout(debounceUpdateTimer);
+    }, [currentMermaidSourceCode, generateAsynchronousMermaidSvg]);
 
     return (
-        <div className="relative flex-1 bg-[var(--bg-page)] overflow-hidden cursor-grab active:cursor-grabbing"
+        <div
+            className="relative flex-1 bg-[var(--bg-page)] overflow-hidden cursor-grab active:cursor-grabbing select-none"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}>
-
-            {/* Grille de points */}
+            onMouseLeave={handleMouseUp}
+        >
+            {/* GRILLE D'ARRIÈRE-PLAN : Esthétique "Blueprint" */}
             <div
-                className="absolute inset-0 opacity-10"
+                className="absolute inset-0 opacity-10 pointer-events-none"
                 style={{
                     backgroundImage: 'radial-gradient(circle, var(--text-secondary) 1px, transparent 1px)',
                     backgroundSize: '24px 24px',
@@ -94,29 +138,43 @@ export function MermaidPreview({ code }: MermaidPreviewProps) {
                 }}
             />
 
+            {/* CONTENEUR DU SVG : Applique le Zoom et le Pan via transform CSS */}
             <div
                 className="absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-out"
                 style={{
                     transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                     transformOrigin: 'center center'
                 }}
-                dangerouslySetInnerHTML={{ __html: svg }}
+                dangerouslySetInnerHTML={{ __html: renderedSvgMarkupContent }}
             />
 
-            {/* Controls */}
+            {/* BARRE D'OUTILS (Zoom +, Zoom -, Reset) */}
             <div className="absolute bottom-6 right-6 flex items-center gap-2 bg-[#161618]/80 backdrop-blur-md p-1 rounded-xl border border-[var(--border-subtle)] shadow-2xl">
-                <button
-                    onClick={zoomOut}
-                    className="p-2 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-colors"><ZoomOut size={16} /></button>
-                <div className="w-[1px] h-4 bg-[var(--border-subtle)]" />
-                <button
-                    onClick={zoomIn}
-                    className="p-2 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-colors"><ZoomIn size={16} /></button>
-                <div className="w-[1px] h-4 bg-[var(--border-subtle)]" />
-                <button
-                    onClick={reset}
-                    className="p-2 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-colors"><Maximize2 size={16} /></button>
+                <ControlButton onClick={zoomOut} icon={<ZoomOut size={16} />} />
+                <Divider />
+                <ControlButton onClick={zoomIn} icon={<ZoomIn size={16} />} />
+                <Divider />
+                <ControlButton onClick={reset} icon={<Maximize2 size={16} />} />
             </div>
         </div>
     );
 }
+
+/**
+ * COMPOSANT INTERNE : ControlButton
+ * Un bouton stylisé pour la barre d'outils
+ */
+const ControlButton = ({ onClick, icon }: { onClick: () => void, icon: React.ReactNode }) => (
+    <button
+        onClick={onClick}
+        className="p-2 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-white transition-all"
+    >
+        {icon}
+    </button>
+);
+
+/**
+ * COMPOSANT INTERNE : Divider
+ * Simple séparateur vertical
+ */
+const Divider = () => <div className="w-[1px] h-4 bg-[var(--border-subtle)]" />;

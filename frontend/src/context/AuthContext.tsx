@@ -3,8 +3,19 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import Cookies from 'js-cookie';
 
+/**
+ * INTERFACE : User
+ * Représente la structure d'un utilisateur dans le système.
+ */
+export interface User {
+    id: string;
+    email: string;
+    username: string;
+    avatarUrl?: string;
+}
+
 interface AuthContextType {
-    user: any;
+    user: User | null;
     loading: boolean;
     logout: () => void;
     refreshUser: () => Promise<void>;
@@ -15,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Provider : composant qui fournit le contexte à ses enfants
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchUser = async () => {

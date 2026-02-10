@@ -18,42 +18,47 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
     useEffect(() => {
         if (!editor || !id) return;
 
-        // Création du document partagé Yjs
+        // 1. Création du document et du provider (stable)
         const ydoc = new Y.Doc();
-        // Connexion WebSocket pour la synchronisation temps réel
         const provider = new HocuspocusProvider({
             url: APP_CONFIG.WEBSOCKET_URL,
             name: `diagram-${id}`,
             document: ydoc,
+            onConnect: () => console.log('WebSocket connecté'),
+            onStatus: (data) => console.log(`Statut : ${data.status}`),
         });
 
         providerRef.current = provider;
 
-        const type = ydoc.getText('monaco');
+        const type = ydoc.getText('monaco_content');
         setYtext(type);
 
-        // Liaison bidirectionnelle entre Yjs et Monaco Editor
+        // 2. On vide le modèle Monaco local avant de le lier
+        // Cela évite que le contenu par défaut de Monaco ne fusionne mal avec Yjs
+        const model = editor.getModel();
+        if (model) {
+            model.setValue(""); // On force le vide pour laisser Yjs injecter le contenu propre
+        }
+
+        // 3. Liaison bidirectionnelle
         const binding = new MonacoBinding(
             type,
-            editor.getModel()!,
+            model!,
             new Set([editor]),
             provider.awareness // Awareness : gère les curseurs des autres utilisateurs
         );
 
         bindingRef.current = binding;
 
-        // Si le document Yjs est vide, initialiser avec defaultValue
-        if (type.toString() === '' && defaultValue) {
-            type.insert(0, defaultValue);
-        }
-
         return () => {
-            provider.destroy();
+            console.log("nettoyage de Yjs...");
             binding.destroy();
+            provider.destroy();
+            ydoc.destroy();
             providerRef.current = null;
             bindingRef.current = null;
         };
-    }, [id, editor, defaultValue]);
+    }, [id, editor]); // On enlève defaultValue des dépendances pour éviter de tout recréer si elle change
 
     const setContent = (content: string) => {
         if (ytext) {

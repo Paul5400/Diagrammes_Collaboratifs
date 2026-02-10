@@ -354,7 +354,7 @@ export function useYjs(id: string, editor: any)
 2. **Connexion au serveur WebSocket**
    ```tsx
    const provider = new HocuspocusProvider({
-       url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
+       url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3002',
        name: `diagram-${id}`,  // Nom unique du document
        document: ydoc,
    });
@@ -362,7 +362,7 @@ export function useYjs(id: string, editor: any)
 
 3. **Binding avec Monaco**
    ```tsx
-   const type = ydoc.getText('monaco');
+   const type = ydoc.getText('monaco_content');
    const binding = new MonacoBinding(
        type,
        editor.getModel()!,

@@ -24,7 +24,7 @@
     "y-monaco": "^0.1.5",
     "y-protocols": "^1.0.6",
     "lib0": "^0.2.98",
-    "@hocuspocus/provider": "^2.15.0",
+    "@hocuspocus/provider": "^3.4.3",
     "lodash.debounce": "^4.0.8",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.2"

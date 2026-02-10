@@ -2,59 +2,61 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-github2';
 import { ConfigService } from '@nestjs/config';
-import { UserService} from '../user/user.service';
+import { UserService } from '../user/user.service';
 import { LoginDto } from '../user/dto/loginDto';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
-	private readonly logger = new Logger(GithubStrategy.name);
-	private readonly usedCodes = new Set<string>();
+  private readonly logger = new Logger(GithubStrategy.name);
+  private readonly usedCodes = new Set<string>();
 
-	constructor(
-		private readonly configService: ConfigService,
-		private readonly userService: UserService,
-	) {
-		const clientID = configService.get<string>('GITHUB_CLIENT_ID')!;
-		const clientSecret = configService.get<string>('GITHUB_CLIENT_SECRET')!;
-		const callbackURL = configService.get<string>('GITHUB_CALLBACK_URL')!;
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly userService: UserService,
+  ) {
+    const clientID = configService.get<string>('GITHUB_CLIENT_ID')!;
+    const clientSecret = configService.get<string>('GITHUB_CLIENT_SECRET')!;
+    const callbackURL = configService.get<string>('GITHUB_CALLBACK_URL')!;
 
-		super({
-			clientID,
-			clientSecret,
-			callbackURL,
-			scope: ['user:email'],
-		});
-	}
+    super({
+      clientID,
+      clientSecret,
+      callbackURL,
+      scope: ['user:email'],
+    });
+  }
 
-	authenticate(req: any, options?: any) {
-		const code = req?.query?.code;
-		if (code) {
-			this.logger.debug(`Received GitHub code ${code}`);
-			if (this.usedCodes.has(code)) {
-				this.logger.warn(`GitHub code ${code} already used. Ignoring duplicate callback request to avoid race condition.`);
-				return;
-			}
-			this.usedCodes.add(code);
-			setTimeout(() => this.usedCodes.delete(code), 60_000);
-		}
-		return super.authenticate(req, options);
-	}
+  authenticate(req: any, options?: any) {
+    const code = req?.query?.code;
+    if (code) {
+      this.logger.debug(`Received GitHub code ${code}`);
+      if (this.usedCodes.has(code)) {
+        this.logger.warn(
+          `GitHub code ${code} already used. Ignoring duplicate callback request to avoid race condition.`,
+        );
+        return;
+      }
+      this.usedCodes.add(code);
+      setTimeout(() => this.usedCodes.delete(code), 60_000);
+    }
+    return super.authenticate(req, options);
+  }
 
-	async validate(accessToken: string, _refreshToken: string, profile: any) {
-		const githubId = profile.id?.toString();
-		const username = profile.username ?? profile.displayName ?? null;
-		const email = profile.emails?.[0]?.value ?? null;
-		const avatarUrl = profile.photos?.[0]?.value ?? null;
+  async validate(accessToken: string, _refreshToken: string, profile: any) {
+    const githubId = profile.id?.toString();
+    const username = profile.username ?? profile.displayName ?? null;
+    const email = profile.emails?.[0]?.value ?? null;
+    const avatarUrl = profile.photos?.[0]?.value ?? null;
 
-		const payload: LoginDto = {
-			githubId,
-			username,
-			email,
-			avatarUrl,
-			accessToken,
-		};
+    const payload: LoginDto = {
+      githubId,
+      username,
+      email,
+      avatarUrl,
+      accessToken,
+    };
 
-		const user = await this.userService.findOrCreateFromGithub(payload);
-		return user;
-	}
+    const user = await this.userService.findOrCreateFromGithub(payload);
+    return user;
+  }
 }

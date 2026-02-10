@@ -5,9 +5,7 @@ import { GithubUser } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private jwtService: JwtService,
-  ) {}
+  constructor(private jwtService: JwtService) {}
 
   generateToken(githubUser: GithubUser) {
     const payload = {

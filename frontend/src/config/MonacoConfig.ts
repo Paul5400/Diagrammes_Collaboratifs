@@ -8,7 +8,7 @@ import { editor } from "monaco-editor";
 export const MONACO_EDITOR_CONFIGURATION_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
     minimap: { enabled: false },               // Désactive le mini-aperçu (peu utile pour des diagrammes courts)
     fontSize: 13,
-    fontFamily: 'JetBrains Mono, monospace',   // Police monospace moderne
+    fontFamily: 'monospace',                   // Police monospace moderne
     lineNumbers: 'on',
     roundedSelection: false,
     scrollBeyondLastLine: false,               // Empêche le scroll infini vers le bas
@@ -18,5 +18,8 @@ export const MONACO_EDITOR_CONFIGURATION_OPTIONS: editor.IStandaloneEditorConstr
     cursorSmoothCaretAnimation: "on",          // Animation fluide du curseur
     smoothScrolling: true,
     contextmenu: false,                        // Désactive le menu contextuel par défaut de Monaco
-    lineHeight: 1.6,
+    lineHeight: 20,
+    renderValidationDecorations: 'on',
+    wordWrap: 'off',
+    wrappingStrategy: 'advanced',
 };

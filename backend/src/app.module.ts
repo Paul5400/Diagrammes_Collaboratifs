@@ -9,6 +9,7 @@ import { DiagramModule } from './diagram/diagram.module';
 import { CollabModule } from './collab/collab.module';
 import { GitModule } from './git/git.module';
 import { RedisModule } from './redis/redis.module';
+import { ProjetModule } from './projet/projet.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RedisModule } from './redis/redis.module';
     DiagramModule,
     CollabModule,
     GitModule,
+    ProjetModule,
   ],
   controllers: [AppController],
   providers: [AppService],

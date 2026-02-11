@@ -18,13 +18,13 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     const clientSecret = configService.get<string>('GITHUB_CLIENT_SECRET')!;
     const callbackURL = configService.get<string>('GITHUB_CALLBACK_URL')!;
 
-    super({
-      clientID,
-      clientSecret,
-      callbackURL,
-      scope: ['user:email'],
-    });
-  }
+		super({
+			clientID,
+			clientSecret,
+			callbackURL,
+			scope: ['user:email', 'repo'],
+		});
+	}
 
   authenticate(req: any, options?: any) {
     const code = req?.query?.code;

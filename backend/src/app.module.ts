@@ -14,7 +14,7 @@ import { ProjetModule } from './projet/projet.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule, 
+    PrismaModule,
     AuthModule,
     RedisModule,
     UserModule,

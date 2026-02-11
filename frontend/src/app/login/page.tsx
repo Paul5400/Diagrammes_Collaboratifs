@@ -1,12 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Cookies from "js-cookie";
-import { Github } from "lucide-react";
-import Image from "next/image";
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Cookies from 'js-cookie';
+import { Github } from 'lucide-react';
+import Image from 'next/image';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,11 +15,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = searchParams.get("token");
+    const token = searchParams.get('token');
     if (token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
-      Cookies.set("diagrammer_token", token, { expires: 1 });
-      router.push("/dashboard");
+      Cookies.set('diagrammer_token', token, { expires: 1 });
+      router.push('/dashboard');
     }
   }, [router, searchParams]);
 
@@ -41,11 +43,20 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-[#161618] border border-[var(--border-subtle)] rounded-2xl p-10 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-[#1f1f22] border border-white/5 mb-4">
-            <Image src="/logo.png" alt="Diagrammer" width={30} height={30} className="rounded-lg" />
+            <Image
+              src="/logo.png"
+              alt="Diagrammer"
+              width={30}
+              height={30}
+              className="rounded-lg"
+            />
           </div>
-          <h1 className="text-3xl font-semibold text-white mb-2 tracking-tight">Bon retour !</h1>
+          <h1 className="text-3xl font-semibold text-white mb-2 tracking-tight">
+            Bon retour !
+          </h1>
           <p className="text-[var(--text-secondary)] text-sm">
-            Connectez-vous via GitHub pour retrouver vos diagrammes reliés à vos projets.
+            Connectez-vous via GitHub pour retrouver vos diagrammes reliés à vos
+            projets.
           </p>
         </div>
 
@@ -58,8 +69,10 @@ export default function LoginPage() {
         </button>
 
         <p className="mt-8 text-center text-xs text-[var(--text-secondary)] leading-relaxed">
-          En continuant, vous acceptez notre politique de confidentialité.<br />
-          Le token est stocké localement pour simplifier le développement (prévoir un cookie HttpOnly en production).
+          En continuant, vous acceptez notre politique de confidentialité.
+          <br />
+          Le token est stocké localement pour simplifier le développement
+          (prévoir un cookie HttpOnly en production).
         </p>
       </div>
     </div>

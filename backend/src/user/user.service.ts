@@ -16,7 +16,10 @@ export class UserService {
   async findOrCreateFromGithub(profile: LoginDto): Promise<GithubUser> {
     try {
       if (profile.accessToken) {
-        await this.redis.storeGithubToken(profile.githubId, profile.accessToken);
+        await this.redis.storeGithubToken(
+          profile.githubId,
+          profile.accessToken,
+        );
       }
 
       const githubUser = await this.prisma.githubUser.upsert({
@@ -36,7 +39,6 @@ export class UserService {
 
       this.logger.log(`GitHub user ${profile.githubId} processed`);
       return githubUser;
-
     } catch (error) {
       this.logger.error(`Failed to process GitHub user: ${error.message}`);
       throw error;

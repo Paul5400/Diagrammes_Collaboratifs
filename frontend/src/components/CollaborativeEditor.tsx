@@ -1,193 +1,140 @@
-"use client";
+'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useImperativeHandle,
+  forwardRef,
+  useCallback,
+} from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
-import * as Y from 'yjs';
-import mermaid from 'mermaid';
-import { HocuspocusProvider } from '@hocuspocus/provider';
-import debounce from 'lodash.debounce';
-import { MonacoBinding } from 'y-monaco';
+import { editor } from 'monaco-editor';
+import { useYjs } from '@/hooks/useYjs';
+import { useMermaidValidation } from '@/hooks/useMermaidValidation';
+import { MERMAID_KEYWORDS } from '@/config/MermaidKeywords';
+import { MONACO_EDITOR_CONFIGURATION_OPTIONS } from '@/config/MonacoConfig';
+import { MermaidCode, DiagramId } from '@/types/DiagramTypes';
 
+/**
+ * PROPS : CollaborativeEditorProps
+ * @param sharedDocumentId Unique ID du document pour la synchronisation Hocuspocus/Yjs
+ * @param onContentUpdate Callback appelé à chaque modification du texte
+ * @param initialContentValue Code initial si le document est vide
+ */
 interface CollaborativeEditorProps {
-    id: string;
-    onChange: (value: string | undefined) => void;
-    defaultValue?: string;
+  sharedDocumentId: DiagramId;
+  onContentUpdate: (updatedContent: MermaidCode | undefined) => void;
+  initialContentValue?: MermaidCode;
 }
 
+/**
+ * INTERFACE REF : CollaborativeEditorRef
+ * Définit les méthodes que le parent (DiagramEditor) peut appeler sur ce composant.
+ */
 export interface CollaborativeEditorRef {
-    setContent: (content: string) => void;
+  injectNewContent: (newContentString: MermaidCode) => void;
 }
 
-export const CollaborativeEditor = React.forwardRef<CollaborativeEditorRef, CollaborativeEditorProps>(
-    ({ id, onChange, defaultValue = "" }, ref) => {
-        const editorRef = useRef<any>(null);
-        const providerRef = useRef<HocuspocusProvider | null>(null);
-        const bindingRef = useRef<MonacoBinding | null>(null);
-        const ytextRef = useRef<Y.Text | null>(null);
+/**
+ * COMPOSANT : CollaborativeEditor
+ * Un éditeur de code enrichi avec :
+ * I. Synchronisation temps réel (Yjs + Hocuspocus)
+ * II. Validation de syntaxe (Mermaid.js)
+ * III. Autocomplétion intelligente
+ */
+export const CollaborativeEditor = forwardRef<
+  CollaborativeEditorRef,
+  CollaborativeEditorProps
+>((props, reference) => {
+  // On reçoit l'unique objet 'props' et on extrait manuellement les données
+  const currentSharedDocumentId = props.sharedDocumentId;
+  const onContentUpdateCallback = props.onContentUpdate;
+  const initialContentFallbackValue = props.initialContentValue || '';
 
-        React.useImperativeHandle(ref, () => ({
-            setContent: (content: string) => {
-                if (ytextRef.current) {
-                    const ytext = ytextRef.current;
-                    ytext.delete(0, ytext.length);
-                    ytext.insert(0, content);
-                }
+  // Instances locales de Monaco (L'éditeur et la bibliothèque)
+  const [monacoEditorInstance, setMonacoEditorInstance] =
+    useState<editor.IStandaloneCodeEditor | null>(null);
+  const [monacoLibraryLibraryInstance, setMonacoLibraryLibraryInstance] =
+    useState<Monaco | null>(null);
+
+  // Initialisation du hook Yjs pour le travail collaboratif
+  const collaborativeYjsHook = useYjs(
+    currentSharedDocumentId,
+    monacoEditorInstance,
+    initialContentFallbackValue
+  );
+  // On récupère la fonction pour mettre à jour le contenu de manière simple
+  const updateCollaborativeContent = collaborativeYjsHook.setContent;
+
+  /**
+   * II. HOOK DE VALIDATION
+   * Analyse le code Mermaid en arrière-plan et affiche des marqueurs rouges en cas d'erreur.
+   */
+  useMermaidValidation(monacoEditorInstance, monacoLibraryLibraryInstance);
+
+  /**
+   * EXPOSITION DES MÉTHODES (Ref)
+   * On expose 'injectNewContent' pour que le parent puisse injecter des templates.
+   */
+  useImperativeHandle(
+    reference,
+    () => ({
+      injectNewContent: updateCollaborativeContent,
+    }),
+    [updateCollaborativeContent]
+  );
+
+  /**
+   * ÉVÉNEMENT : initializeMonacoEditor
+   * Appelé une seule fois quand l'éditeur Monaco est prêt dans le DOM.
+   */
+  const initializeMonacoEditor = useCallback(
+    (editorInstance: editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
+      setMonacoEditorInstance(editorInstance);
+      setMonacoLibraryLibraryInstance(monacoInstance);
+
+      // 1. Enregistrement du nouveau langage 'mermaid' dans Monaco
+      monacoInstance.languages.register({ id: 'mermaid' });
+
+      // III Autocomplétion
+      // 2. Configuration du "Completion Provider" pour l'autocomplétion
+      monacoInstance.languages.registerCompletionItemProvider('mermaid', {
+        provideCompletionItems: (model, position) => {
+          const suggestions = MERMAID_KEYWORDS.map((keyword) => ({
+            label: keyword,
+            kind: monacoInstance.languages.CompletionItemKind.Keyword,
+            insertText: keyword,
+            range: {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: position.column - 1,
+              endColumn: position.column,
             },
-        }));
+          }));
+          return { suggestions };
+        },
+      });
 
-        function handleEditorDidMount(editor: any, monaco: Monaco) {
-            editorRef.current = editor;
+      // 3. Écouteur de changements : on prévient le parent (DiagramEditor)
+      // nécessaire pour mettre à jour la prévisualisation SVG.
+      editorInstance.onDidChangeModelContent(() => {
+        onContentUpdateCallback(editorInstance.getValue());
+      });
+    },
+    [onContentUpdateCallback]
+  );
 
-            // Configuration de l'éditeur pour Mermaid
-            monaco.languages.register({ id: 'mermaid' });
-
-            monaco.languages.registerCompletionItemProvider('mermaid', {
-                provideCompletionItems: (model, position) => {
-                    const keywords = [
-                        // Diagram Types
-                        'sequenceDiagram', 'flowchart', 'graph', 'classDiagram', 'stateDiagram-v2',
-                        'gantt', 'pie', 'erDiagram', 'journey', 'gitGraph', 'mindmap', 'timeline',
-
-                        // General/Flowchart
-                        'participant', 'actor', 'loop', 'end', 'alt', 'else', 'opt', 'rect', 'note',
-                        'Note right of', 'Note left of', 'Note over', 'activate', 'deactivate', 'as',
-                        'LR', 'TB', 'BT', 'RL', 'subgraph', 'click', 'style', 'direction',
-
-                        // Class/ER
-                        'class', 'callback', 'link', 'click', 'iterable', 'interface', 'relationship',
-
-                        // Gantt
-                        'title', 'dateFormat', 'axisFormat', 'section',
-
-                        // State
-                        'state', '[*] ',
-
-                        // Pie
-                        'title', 'showData'
-                    ];
-
-                    const suggestions = keywords.map(k => ({
-                        label: k,
-                        kind: monaco.languages.CompletionItemKind.Keyword,
-                        insertText: k,
-                        range: {
-                            startLineNumber: position.lineNumber,
-                            endLineNumber: position.lineNumber,
-                            startColumn: position.column - 1,
-                            endColumn: position.column
-                        }
-                    }));
-
-                    return { suggestions };
-                }
-            });
-
-            // Initialisation de Yjs et Hocuspocus
-            const ydoc = new Y.Doc();
-            const provider = new HocuspocusProvider({
-                url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
-                name: `diagram-${id}`,
-                document: ydoc,
-            });
-
-            providerRef.current = provider;
-
-            const type = ydoc.getText('monaco');
-            ytextRef.current = type;
-
-            // Binding entre Yjs et Monaco
-            const binding = new MonacoBinding(
-                type,
-                editor.getModel()!,
-                new Set([editor]),
-                provider.awareness
-            );
-
-            bindingRef.current = binding;
-
-            // Si le document est vide, on met la valeur par défaut
-            if (type.toString() === '' && defaultValue) {
-                type.insert(0, defaultValue);
-            }
-
-            const validateSyntax = async (content: string) => {
-                if (!content || !content.trim()) {
-                    monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', []);
-                    return;
-                }
-                try {
-                    await mermaid.parse(content, { suppressErrors: true });
-                    monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', []);
-                } catch (err: any) {
-                    // Essayer d'extraire la ligne si possible de l'erreur Mermaid
-                    const errorMsg = err.message || 'Syntax Error';
-                    const markers = [{
-                        severity: monaco.MarkerSeverity.Error,
-                        message: errorMsg,
-                        startLineNumber: 1, // Par défaut si on ne peut pas extraire la ligne
-                        startColumn: 1,
-                        endLineNumber: editor.getModel()!.getLineCount(),
-                        endColumn: 1000,
-                    }];
-
-                    // Tentative d'extraction de la ligne (ex: "Parse error on line 10")
-                    const match = errorMsg.match(/line (\d+)/i);
-                    if (match && match[1]) {
-                        const line = parseInt(match[1], 10);
-                        markers[0].startLineNumber = line;
-                        markers[0].endLineNumber = line;
-                    }
-
-                    monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', markers);
-                }
-            };
-
-            const debouncedValidate = debounce(validateSyntax, 500);
-
-            editor.onDidChangeModelContent(() => {
-                const content = editor.getValue();
-                onChange(content);
-                debouncedValidate(content);
-            });
-
-            // Validation initiale
-            validateSyntax(editor.getValue());
-        }
-
-        useEffect(() => {
-            return () => {
-                if (providerRef.current) providerRef.current.destroy();
-                if (bindingRef.current) bindingRef.current.destroy();
-            };
-        }, []);
-
-        return (
-            <div className="flex-1 h-full border-r border-[var(--border-subtle)] bg-[#0c0c0e]">
-                <div className="h-full pt-4">
-                    <Editor
-                        height="100%"
-                        defaultLanguage="mermaid"
-                        theme="vs-dark"
-                        onMount={handleEditorDidMount}
-                        options={{
-                            minimap: { enabled: false },
-                            fontSize: 13,
-                            fontFamily: 'JetBrains Mono, monospace',
-                            lineNumbers: 'on',
-                            roundedSelection: false,
-                            scrollBeyondLastLine: false,
-                            readOnly: false,
-                            automaticLayout: true,
-                            padding: { top: 20 },
-                            backgroundColor: '#0c0c0e',
-                            cursorSmoothCaretAnimation: "on",
-                            smoothScrolling: true,
-                            contextmenu: false,
-                            lineHeight: 1.6,
-                        }}
-                    />
-                </div>
-            </div>
-        );
-    }
-);
+  return (
+    <div className="flex-1 h-full border-r border-[var(--border-subtle)] bg-[#0c0c0e]">
+      <div className="h-full pt-4">
+        <Editor
+          height="100%"
+          defaultLanguage="mermaid"
+          theme="vs-dark"
+          onMount={initializeMonacoEditor}
+          options={MONACO_EDITOR_CONFIGURATION_OPTIONS}
+        />
+      </div>
+    </div>
+  );
+});
+CollaborativeEditor.displayName = 'CollaborativeEditor';

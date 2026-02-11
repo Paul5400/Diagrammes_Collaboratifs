@@ -1,90 +1,121 @@
-"use client";
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { EditorHeader } from './EditorHeader';
 import { MermaidPreview } from './MermaidPreview';
 import { CollaborativeEditorRef } from './CollaborativeEditor';
-import Cookies from 'js-cookie';
+import { useAuth } from '@/context/AuthContext';
+import { DiagramTemplate } from './DiagramTemplates';
+import { MermaidCode, DiagramId } from '@/types/DiagramTypes';
 
+/**
+ * IMPORT DYNAMIQUE : CollaborativeEditor
+ * Monaco Editor utilise des API navigateur (DOM, window) qui ne sont pas disponibles
+ * lors du rendu côté serveur (SSR). On utilise next/dynamic avec { ssr: false }
+ * pour le charger uniquement dans le navigateur de l'utilisateur.
+ */
 const CollaborativeEditor = dynamic(
-    () => import('./CollaborativeEditor').then((mod) => mod.CollaborativeEditor),
-    { ssr: false }
+  () => import('./CollaborativeEditor').then((mod) => mod.CollaborativeEditor),
+  { ssr: false }
 );
 
+/**
+ * CONSTANTE : INITIAL_DIAGRAM_TEMPLATE_CODE
+ * Contenu par défaut affiché lors de l'ouverture d'un nouveau diagramme
+ * si aucune donnée n'est encore présente dans la session collaborative.
+ */
+const INITIAL_DIAGRAM_TEMPLATE_CODE: MermaidCode = "";
+
+/**
+ * INTERFACE : DiagramEditorProps
+ * Définit la structure des propriétés reçues par le composant racine.
+ */
 interface DiagramEditorProps {
-    id: string;
+  id: DiagramId;
 }
 
-const DEFAULT_CODE = `sequenceDiagram
-    participant User
-    participant System
-    participant Database
+/**
+ * COMPOSANT : DiagramEditor
+ * C'est le composant racine de l'espace de travail.
+ * Il orchestre la synchronisation entre l'éditeur (texte) et la preview (image).
+ */
+export function DiagramEditor(diagram: DiagramEditorProps) {
+  // On reçoit l'objet 'props' et on récupère manuellement l'identifiant du diagramme
+  const currentDiagramId = diagram.id;
 
-    User->>System: Login Request
-    System->>Database: Check Credentials
-    Database-->>System: OK
-    System-->>User: Auth Token
+  // État principal : contient la chaîne de caractères (code Mermaid) actuelle.
+  const [mermaidDiagramSourceCode, setMermaidDiagramSourceCode] =
+    useState<MermaidCode>(INITIAL_DIAGRAM_TEMPLATE_CODE);
 
-    Note right of System: Token expires in 24h`;
+  // Récupération de l'objet d'authentification
+  const authenticationContext = useAuth();
+  // On extrait l'instance de l'utilisateur de manière explicite et simple
+  const authenticatedUserInstance = authenticationContext.user;
 
-export function DiagramEditor({ id }: DiagramEditorProps) {
-    const [code, setCode] = useState(DEFAULT_CODE);
-    const [user, setUser] = useState<any>(null);
-    const editorRef = React.useRef<CollaborativeEditorRef>(null);
+  /**
+   * RÉFÉRENCE DE L'ÉDITEUR MONACO
+   * Cette ref nous permet d'accéder aux méthodes internes du composant CollaborativeEditor
+   * (définies via useImperativeHandle) comme par exemple 'injectNewContent'.
+   */
+  const collaborativeMonacoEditorReference =
+    useRef<CollaborativeEditorRef>(null);
 
-    React.useEffect(() => {
-        const fetchUser = async () => {
-            const token = Cookies.get("diagrammer_token");
-            if (!token) return;
+  /**
+   * GESTIONNAIRE : handleMonacoContentModification
+   * Cette fonction est passée à l'éditeur. Elle est appelée dès que le texte change.
+   * On utilise useCallback pour que la référence de la fonction reste stable
+   * et n'entraîne pas de re-rendus inutiles chez l'enfant.
+   */
+  const handleMonacoContentModification = useCallback(
+    (updatedContent: MermaidCode | undefined) => {
+      setMermaidDiagramSourceCode(updatedContent || '');
+    },
+    []
+  );
 
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+  /**
+   * GESTIONNAIRE : handleTemplateSelectionAction
+   * Action déclenchée quand l'utilisateur choisit un exemple dans le Header.
+   * On pilote manuellement l'éditeur pour injecter le nouveau code.
+   */
+  const handleTemplateSelectionAction = useCallback(
+    (selectedTemplateObject: DiagramTemplate) => {
+      if (collaborativeMonacoEditorReference.current) {
+        collaborativeMonacoEditorReference.current.injectNewContent(
+          selectedTemplateObject.code
+        );
+      }
+    },
+    []
+  );
 
-                if (response.ok) {
-                    const userData = await response.json();
-                    setUser(userData);
-                }
-            } catch (error) {
-                console.error("Error fetching user:", error);
-            }
-        };
+  return (
+    <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">
+      {/* EN-TÊTE : Contient le titre, le sélecteur de templates et le profil utilisateur */}
+      <EditorHeader
+        projectTitleLabel="System Architecture V2"
+        currentUserData={authenticatedUserInstance}
+        onSelectTemplateCallback={handleTemplateSelectionAction}
+      />
 
-        fetchUser();
-    }, []);
+      {/* ZONE PRINCIPALE : Utilise flexbox pour diviser l'écran en deux (Édition / Prévisualisation) */}
+      <main className="flex flex-1 overflow-hidden">
+        {/* PANNEAU GAUCHE : SECTION ÉDITION COLLABORATIVE (45% de l'écran) */}
+        <section className="w-[45%] h-full flex flex-col border-r border-[var(--border-subtle)]">
+          <CollaborativeEditor
+            ref={collaborativeMonacoEditorReference}
+            sharedDocumentId={currentDiagramId}
+            onContentUpdate={handleMonacoContentModification}
+            initialContentValue={INITIAL_DIAGRAM_TEMPLATE_CODE}
+          />
+        </section>
 
-    return (
-        <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">
-            <EditorHeader
-                title="System Architecture V2"
-                user={user}
-                onSelectTemplate={(t) => {
-                    if (editorRef.current) {
-                        editorRef.current.setContent(t.code);
-                    }
-                }}
-            />
-
-            <main className="flex flex-1 overflow-hidden">
-                {/* Editor Side */}
-                <div className="w-[45%] h-full flex flex-col border-r border-[var(--border-subtle)]">
-                    <CollaborativeEditor
-                        ref={editorRef}
-                        id={id}
-                        onChange={(val) => setCode(val || "")}
-                        defaultValue={DEFAULT_CODE}
-                    />
-                </div>
-
-                {/* Preview Side */}
-                <div className="w-[55%] h-full relative flex flex-col bg-[#050505]">
-                    <MermaidPreview code={code} />
-                </div>
-            </main>
-        </div>
-    );
+        {/* PANNEAU DROIT : SECTION PRÉVISUALISATION GRAPHIQUE (55% de l'écran) */}
+        <section className="w-[55%] h-full relative flex flex-col bg-[#050505]">
+          <MermaidPreview mermaidCodeSource={mermaidDiagramSourceCode} />
+        </section>
+      </main>
+    </div>
+  );
 }

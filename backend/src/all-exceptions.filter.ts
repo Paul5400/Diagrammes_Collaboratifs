@@ -21,7 +21,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const baseMessage =
       exception instanceof HttpException
         ? exception.getResponse()
-        : (exception as any)?.message ?? 'Internal server error';
+        : ((exception as any)?.message ?? 'Internal server error');
 
     // Log detailed error to help debug OAuth issues.
     // We avoid using Nest's logger so the output appears even before logger init.

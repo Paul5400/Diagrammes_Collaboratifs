@@ -19,7 +19,8 @@ services:
       context: ./backend
       dockerfile: build_docker/Dockerfile
     ports:
-      - '${BACKEND_PORT:-3002}:${PORT:-3001}'
+      - '3002:3001' # API NestJS
+      - '3032:3032' # Hocuspocus WebSocket
     volumes:
       - ./backend:/app:delegated
       - back-node-modules:/app/node_modules
@@ -37,16 +38,16 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@diagrammer.db:5432/diagrammer?schema=public
       - NODE_ENV=${NODE_ENV:-development}
-      - REDIS_HOST=redis  # ✅ Ajouter
-      - REDIS_PORT=6379   # ✅ Ajouter
+      - REDIS_HOST=redis 
+      - REDIS_PORT=6379 
       - PORT=3001
-      - CHOKIDAR_USEPOLLING=true  # ✅ Force le polling pour hot reload
+      - CHOKIDAR_USEPOLLING=true 
     command: >
       sh -c "
         while ! nc -z diagrammer.db 5432; do sleep 1; done &&
         npm install --include=dev &&
         npx prisma generate &&
-        (npx prisma migrate deploy || npx prisma db push) &&
+        (npx prisma migrate deploy || npx prisma db push --accept-data-loss) &&
         npm run start:dev
       "
     restart: unless-stopped
@@ -94,7 +95,7 @@ services:
     image: redis:7-alpine
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - "16379:6379"
     networks:
       - diagrammer.net
     volumes:

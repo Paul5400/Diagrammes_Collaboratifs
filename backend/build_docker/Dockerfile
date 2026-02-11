@@ -13,6 +13,9 @@ COPY prisma.config.ts ./
 # Installation des dépendances (inclut les devDependencies pour Prisma CLI)
 RUN npm install --include=dev
 
+# Linting et formatage (optionnel pour CI/CD)
+# RUN npm run lint && npm run format && npm run format:prisma
+
 # Copie du reste du code source
 COPY . .
 

@@ -9,7 +9,7 @@ import { Logo } from '../../components/Logo';
 export default function ProfilePage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<unknown>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -142,6 +142,18 @@ export default function ProfilePage() {
                 >
                   Voir sur GitHub
                 </a>
+              </div>
+
+              <div className="pt-6 border-t border-[var(--border-subtle)] mt-6">
+                <button
+                  onClick={() => {
+                    Cookies.remove('diagrammer_token');
+                    router.push('/login');
+                  }}
+                  className="w-full py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-400/10 border border-transparent hover:border-red-400/20 transition-all flex items-center justify-center gap-2"
+                >
+                  Se déconnecter
+                </button>
               </div>
             </div>
           </div>

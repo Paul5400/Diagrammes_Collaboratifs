@@ -1,40 +1,42 @@
-import React, { useState } from 'react';
+import React from 'react';
+import Link from 'next/link';
 import {
   Share2,
   Download,
-  GitBranch,
-  Users,
-  ChevronDown,
   Layout,
+  ChevronLeft,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
-import { DIAGRAM_TEMPLATES, DiagramTemplate } from './DiagramTemplates';
 import { User } from '@/context/AuthContext';
 
 interface EditorHeaderProps {
   projectTitleLabel: string;
   className?: string;
-  onSelectTemplateCallback: (selectedTemplateObject: DiagramTemplate) => void;
   currentUserData?: User | null;
+  diagramType: string;
 }
 
 export function EditorHeader(props: EditorHeaderProps) {
   // On reçoit l'unique objet 'props' et on pioche manuellement dedans
   const currentProjectTitle = props.projectTitleLabel;
-  const handleTemplateSelectionAction = props.onSelectTemplateCallback;
   const authenticatedUserInformation = props.currentUserData;
   const customComponentClassName = props.className || '';
+  const currentDiagramType = props.diagramType;
 
-  // État local pour gérer la visibilité du menu déroulant des templates
-  const [isTemplateSelectionMenuVisible, setTemplateSelectionMenuVisibility] =
-    useState(false);
 
   return (
     <header
       className={`h-14 border-b border-[var(--border-subtle)] bg-[#0f0f11]/80 backdrop-blur-md flex items-center justify-between px-4 z-50 ${customComponentClassName}`}
     >
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/dashboard"
+          className="p-2 hover:bg-[var(--bg-hover)] rounded-lg text-[var(--text-secondary)] hover:text-white transition-colors"
+          title="Retour au tableau de bord"
+        >
+          <ChevronLeft size={20} />
+        </Link>
         <Logo />
 
         <div className="h-4 w-[1px] bg-[var(--border-subtle)]" />
@@ -66,42 +68,10 @@ export function EditorHeader(props: EditorHeaderProps) {
 
         <div className="h-4 w-[1px] bg-[var(--border-subtle)]" />
 
-        <div className="relative">
-          <button
-            onClick={() =>
-              setTemplateSelectionMenuVisibility(
-                !isTemplateSelectionMenuVisible
-              )
-            }
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[#1a1a1d] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all text-xs"
-          >
-            <Layout size={14} />
-            Templates
-            <ChevronDown
-              size={14}
-              className={`transition-transform ${isTemplateSelectionMenuVisible ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {isTemplateSelectionMenuVisible && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-[#0f0f11] border border-[var(--border-subtle)] rounded-xl shadow-2xl overflow-hidden py-1.5 animate-in fade-in zoom-in-95 duration-100">
-              {DIAGRAM_TEMPLATES.map((currentIterationTemplate) => (
-                <button
-                  key={currentIterationTemplate.id}
-                  onClick={() => {
-                    handleTemplateSelectionAction(currentIterationTemplate);
-                    setTemplateSelectionMenuVisibility(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-left text-xs text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-hover)] transition-colors"
-                >
-                  <span className="text-lg">
-                    {currentIterationTemplate.icon}
-                  </span>
-                  {currentIterationTemplate.label}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* Badge Type de Diagramme (Lecture seule) */}
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[#1a1a1d] text-[var(--text-secondary)] text-xs cursor-default">
+          <Layout size={14} />
+          <span className="font-medium">{currentDiagramType}</span>
         </div>
       </div>
 

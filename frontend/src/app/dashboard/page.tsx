@@ -3,15 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import Link from 'next/link';
 import { Logo } from '../../components/Logo';
 import { ProjectCard } from '../../components/ProjectCard';
 import { UserMenu } from '../../components/UserMenu';
+import { CreateDiagramDialog } from '../../components/dashboard/CreateDiagramDialog';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<unknown>(null);
+  const [user, setUser] = useState<any>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // useEffect : vérification de l'authentification au chargement de la page
   useEffect(() => {
@@ -93,17 +94,11 @@ export default function DashboardPage() {
             </h1>
           </div>
           <div className="flex gap-3">
-            <Link
-              href="/diagramme/new"
+            <button
+              onClick={() => setIsCreateDialogOpen(true)}
               className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-0.5"
             >
               + Nouveau diagramme
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2.5 rounded-lg text-sm font-medium border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all"
-            >
-              Se déconnecter
             </button>
           </div>
         </div>
@@ -119,6 +114,11 @@ export default function DashboardPage() {
           ))}
         </div>
       </main>
+
+      <CreateDiagramDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+      />
     </div>
   );
 }

@@ -22,7 +22,6 @@ model Utilisateur {
   dateInscription  DateTime        @default(now()) @map("date_inscription") @db.Timestamp()
   
   // Relations
-  projets          Projet[]        @relation("ProprietaireProjet")
   diagrammes       Diagramme[]     @relation("ProprietaireDiagramme")
   collaborations   Collaboration[]
 
@@ -43,7 +42,7 @@ model Projet {
   dateModification   DateTime        @default(now()) @updatedAt @map("date_modification") @db.Timestamp()
   
   // Relations
-  proprietaire       Utilisateur     @relation("ProprietaireProjet", fields: [idProprietaire], references: [id], onDelete: Cascade)
+  proprietaire       GithubUser      @relation("ProprietaireProjet", fields: [idProprietaire], references: [id], onDelete: Cascade)
   diagrammes         Diagramme[]     @relation("ProjetDiagrammes")
   collaborations     Collaboration[] @relation("ProjetCollaborations")
 
@@ -129,6 +128,9 @@ model GithubUser {
   avatarUrl   String?  @map("avatar_url") @db.VarChar(500)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp()
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp()
+  
+  // Relations
+  projets     Projet[] @relation("ProprietaireProjet")
 
   @@map("github_users")
 }

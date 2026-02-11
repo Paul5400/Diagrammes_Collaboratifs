@@ -90,6 +90,9 @@
       "src/**/*.(t|j)s"
     ],
     "coverageDirectory": "coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^redis$": "<rootDir>/test/__mocks__/redis.ts"
+    }
   }
 }

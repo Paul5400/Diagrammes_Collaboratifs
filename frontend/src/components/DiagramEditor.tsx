@@ -25,17 +25,7 @@ const CollaborativeEditor = dynamic(
  * Contenu par défaut affiché lors de l'ouverture d'un nouveau diagramme
  * si aucune donnée n'est encore présente dans la session collaborative.
  */
-const INITIAL_DIAGRAM_TEMPLATE_CODE: MermaidCode = `sequenceDiagram
-    participant User
-    participant System
-    participant Database
-
-    User->>System: Login Request
-    System->>Database: Check Credentials
-    Database-->>System: OK
-    System-->>User: Auth Token
-
-    Note right of System: Token expires in 24h`;
+const INITIAL_DIAGRAM_TEMPLATE_CODE: MermaidCode = "";
 
 /**
  * INTERFACE : DiagramEditorProps

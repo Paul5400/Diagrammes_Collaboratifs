@@ -29,7 +29,12 @@
     "tailwind-merge": "^2.5.2",
     "y-monaco": "^0.1.5",
     "y-protocols": "^1.0.6",
-    "yjs": "^13.6.20"
+    "yjs": "^13.6.20",
+    "lib0": "^0.2.98",
+    "@hocuspocus/provider": "^3.4.3",
+    "lodash.debounce": "^4.0.8",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

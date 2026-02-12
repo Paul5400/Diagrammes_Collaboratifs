@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   webpack: (config) => {
     config.watchOptions = {
       poll: 1000,
@@ -9,11 +8,7 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
-  // Configuration pour Turbopack (Next.js 16+)
-  turbopack: {
-    // Configuration vide pour permettre l'utilisation de Turbopack
-    // avec la config webpack existante
-  },
+  turbopack: {},
 };
 
 export default nextConfig;

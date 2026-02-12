@@ -1,0 +1,41 @@
+meta {
+  name: Get Profile
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  # Récupérer le profil utilisateur
+  
+  Retourne les informations de l'utilisateur connecté.
+  
+  ## Headers requis :
+  - `Authorization: Bearer <JWT_TOKEN>`
+  
+  ## Réponse (200 OK) :
+  ```json
+  {
+    "id": "uuid",
+    "githubId": "120125755",
+    "username": "Kwilium54",
+    "email": "user@example.com",
+    "avatarUrl": "https://avatars.githubusercontent.com/...",
+    "createdAt": "2026-02-11T...",
+    "updatedAt": "2026-02-11T..."
+  }
+  ```
+  
+  ## Erreurs :
+  - 401 Unauthorized : token invalide ou manquant
+  - 404 Not Found : utilisateur introuvable
+}

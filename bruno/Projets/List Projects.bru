@@ -1,0 +1,55 @@
+meta {
+  name: List Projects
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/projets
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  # Lister tous les projets
+  
+  Récupère tous les projets de l'utilisateur connecté.
+  
+  ## Headers requis :
+  - `Authorization: Bearer <JWT_TOKEN>`
+  
+  ## Réponse (200 OK) :
+  ```json
+  [
+    {
+      "id": "uuid-1",
+      "idProprietaire": "uuid-user",
+      "titre": "Projet 1",
+      "description": "Description...",
+      "cheminGit": "Kwilium54/projet-1",
+      "public": false,
+      "dateCreation": "2026-02-12T...",
+      "dateModification": "2026-02-12T...",
+      "_count": {
+        "diagrammes": 3
+      }
+    },
+    {
+      "id": "uuid-2",
+      "titre": "Projet 2",
+      ...
+    }
+  ]
+  ```
+  
+  ## Tri :
+  - Par `dateModification` décroissant (plus récent d'abord)
+  
+  ## Note :
+  - Retourne uniquement les projets créés via Diagrammer
+  - Inclut le nombre de diagrammes par projet
+}

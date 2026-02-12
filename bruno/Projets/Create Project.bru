@@ -1,0 +1,63 @@
+meta {
+  name: Create Project
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/projets
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "titre": "Mon Nouveau Projet",
+    "description": "Description du projet (optionnel)",
+    "public": false
+  }
+}
+
+docs {
+  # Créer un nouveau projet
+  
+  Crée un nouveau projet avec un dépôt GitHub associé.
+  
+  ## Headers requis :
+  - `Authorization: Bearer <JWT_TOKEN>`
+  - `Content-Type: application/json`
+  
+  ## Body (JSON) :
+  - `titre` (string, requis) : Nom du projet
+  - `description` (string, optionnel) : Description du projet
+  - `public` (boolean, optionnel) : Visibilité du dépôt GitHub (défaut: false)
+  
+  ## Réponse (201 Created) :
+  ```json
+  {
+    "id": "uuid-du-projet",
+    "idProprietaire": "uuid-utilisateur",
+    "titre": "Mon Nouveau Projet",
+    "description": "Description du projet",
+    "cheminGit": "Kwilium54/mon-nouveau-projet",
+    "public": false,
+    "dateCreation": "2026-02-12T...",
+    "dateModification": "2026-02-12T..."
+  }
+  ```
+  
+  ## Actions automatiques :
+  1. Création d'un dépôt GitHub privé/public
+  2. Slug du titre pour le nom du repo (ex: "Mon Projet" → "mon-projet")
+  3. Création d'un README.md initial
+  4. Enregistrement dans la base de données
+  
+  ## Erreurs :
+  - 400 Bad Request : titre manquant ou dépôt existe déjà
+  - 401 Unauthorized : token invalide
+  - 500 Internal Server Error : erreur GitHub API
+}

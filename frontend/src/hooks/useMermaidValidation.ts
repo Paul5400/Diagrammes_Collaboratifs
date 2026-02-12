@@ -7,7 +7,7 @@ import { Monaco } from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
 import { APP_CONFIG } from '@/config/AppConfig';
 
- //Hook de validation Mermaid en temps réel - Affiche les erreurs
+//Hook de validation Mermaid en temps réel - Affiche les erreurs
 export function useMermaidValidation(editor: editor.IStandaloneCodeEditor | null, monaco: Monaco | null) {
     // useCallback : Garde la même référence de fonction pour éviter de recréer le debounce à chaque render
     const validate = useCallback(async (content: string) => {
@@ -21,7 +21,7 @@ export function useMermaidValidation(editor: editor.IStandaloneCodeEditor | null
             monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', []);
         } catch (err: unknown) {
             const errorMsg = (err as Error).message || 'Syntax Error';
-            
+
             const markers = [{
                 severity: monaco.MarkerSeverity.Error,
                 message: errorMsg,
@@ -42,11 +42,12 @@ export function useMermaidValidation(editor: editor.IStandaloneCodeEditor | null
 
             monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', markers);
         }
+    }, [editor, monaco]);
 
     const debouncedValidate = useCallback(debounce(validate, APP_CONFIG.VALIDATION_DEBOUNCE_MS), [validate]);
 
-  useEffect(() => {
-    if (!editor || !monaco) return;
+    useEffect(() => {
+        if (!editor || !monaco) return;
 
         // onDidChangeModelContent : Listener appelé à chaque modification de l'éditeur
         const disposable = editor.onDidChangeModelContent(() => {
@@ -59,3 +60,4 @@ export function useMermaidValidation(editor: editor.IStandaloneCodeEditor | null
         return () => disposable.dispose();
     }, [editor, monaco, debouncedValidate, validate]);
 }
+

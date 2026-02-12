@@ -39,8 +39,8 @@ const MERMAID_CONFIG = {
     noteBorderColor: '#52525b',
     noteTextColor: '#fff',
   },
-  securityLevel: 'loose',
-  fontFamily: 'Inter, sans-serif',
+  securityLevel: 'loose' as const,
+  fontFamily: 'Inter, sans-serif' as const,
 };
 
 // Initialisation globale de Mermaid

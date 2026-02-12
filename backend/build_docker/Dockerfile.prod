@@ -4,19 +4,21 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Installation des outils nécessaires pour Prisma
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl libc6-compat
 
 # Copie des fichiers de dépendances
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 # Installation des dépendances (y compris les devDependencies pour le build)
 RUN npm install
 
-# Copie du code source
+# Copie du reste du code source
 COPY . .
 
-# Génération du client Prisma et build du projet
+# Génération du client Prisma (on passe une URL bidon pour le build)
+ENV DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
 RUN npx prisma generate
 RUN npm run build
 

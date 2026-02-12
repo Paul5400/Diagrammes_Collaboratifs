@@ -8,68 +8,94 @@ import { editor } from 'monaco-editor';
 import { DiagramId, MermaidCode } from '@/types/DiagramTypes';
 import { APP_CONFIG } from '@/config/AppConfig';
 
-// Hook pour gérer la collaboration temps réel avec Yjs et WebSocket
-export function useYjs(
-  id: DiagramId,
-  editor: editor.IStandaloneCodeEditor | null,
-  defaultValue: MermaidCode = ''
-) {
-  const providerRef = useRef<HocuspocusProvider | null>(null);
-  const bindingRef = useRef<MonacoBinding | null>(null);
-  const [ytext, setYtext] = useState<Y.Text | null>(null);
+/**
+ * Hook de collaboration en temps réel avec Yjs (CRDT) et Monaco Editor
+ * Synchronise l'éditeur entre plusieurs utilisateurs via WebSocket
+ */
+export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | null, defaultValue: MermaidCode = '') {
+    // useRef : Garde la même instance sans déclencher de re-render (important pour les connexions WebSocket)
+    const providerRef = useRef<HocuspocusProvider | null>(null);
+    const bindingRef = useRef<MonacoBinding | null>(null);
+    const ydocRef = useRef<Y.Doc | null>(null);
+    
+    const [ytext, setYtext] = useState<Y.Text | null>(null);
+    const [isSynced, setIsSynced] = useState(false);
 
-  // useEffect : s'exécute après le rendu, nettoie au démontage
-  useEffect(() => {
-    if (!editor || !id) return;
+    // useEffect : Se ré-exécute quand l'id ou l'editor change (nouveau diagramme ou nouvel éditeur)
+    useEffect(() => {
+        if (!editor || !id) return;
 
-        // 1. Création du document et du provider (stable)
+        // Y.Doc : Structure CRDT pour synchronisation sans conflits
         const ydoc = new Y.Doc();
+        ydocRef.current = ydoc;
+        
+        // Provider WebSocket : Synchronise automatiquement le document Yjs avec le serveur
         const provider = new HocuspocusProvider({
             url: APP_CONFIG.WEBSOCKET_URL,
             name: `diagram-${id}`,
             document: ydoc,
-            onConnect: () => console.log('WebSocket connecté'),
-            onStatus: (data) => console.log(`Statut : ${data.status}`),
+            onSynced: () => {
+                // Déclenche la création du MonacoBinding uniquement après sync complète
+                console.log('Document synchronisé');
+                setIsSynced(true);
+            }
         });
 
-    providerRef.current = provider;
-
+        providerRef.current = provider;
         const type = ydoc.getText('monaco_content');
         setYtext(type);
 
-        // 2. On vide le modèle Monaco local avant de le lier
-        // Cela évite que le contenu par défaut de Monaco ne fusionne mal avec Yjs
-        const model = editor.getModel();
-        if (model) {
-            model.setValue(""); // On force le vide pour laisser Yjs injecter le contenu propre
-        }
+        // Attendre la synchronisation avant de créer le MonacoBinding
+        // Sinon le contenu local écrase le serveur
+        const checkSyncAndBind = () => {
+            if (provider.isSynced && !bindingRef.current) {
+                const model = editor.getModel();
+                if (!model) {
+                    setTimeout(checkSyncAndBind, 100);
+                    return;
+                }
 
-        // 3. Liaison bidirectionnelle
-        const binding = new MonacoBinding(
-            type,
-            model!,
-            new Set([editor]),
-            provider.awareness // Awareness : gère les curseurs des autres utilisateurs
-        );
+                // MonacoBinding : Lie Yjs ↔ Monaco, toute modification est propagée automatiquement
+                const binding = new MonacoBinding(
+                    type,
+                    model,
+                    new Set([editor]),
+                    provider.awareness // Partage les curseurs entre utilisateurs
+                );
 
-        bindingRef.current = binding;
+                bindingRef.current = binding;
+                console.log('MonacoBinding créé');
+            }
+        };
 
+        // Double stratégie : timeout + event listener pour garantir la création du binding
+        const timeout = setTimeout(checkSyncAndBind, 200);
+        provider.on('synced', checkSyncAndBind);
+
+        // Cleanup : Fermer proprement toutes les connexions (WebSocket, binding, CRDT)
         return () => {
-            console.log("nettoyage de Yjs...");
-            binding.destroy();
+            clearTimeout(timeout);
+            if (bindingRef.current) {
+                bindingRef.current.destroy();
+                bindingRef.current = null;
+            }
             provider.destroy();
             ydoc.destroy();
             providerRef.current = null;
-            bindingRef.current = null;
+            ydocRef.current = null;
+            setIsSynced(false);
         };
-    }, [id, editor]); // On enlève defaultValue des dépendances pour éviter de tout recréer si elle change
+    }, [id, editor]);
 
-  const setContent = (content: string) => {
-    if (ytext) {
-      ytext.delete(0, ytext.length);
-      ytext.insert(0, content);
-    }
-  };
+    // Évite que les autres clients voient temporairement le document vide
+    const setContent = (content: string) => {
+        if (ytext && isSynced && ydocRef.current) {
+            ydocRef.current.transact(() => {
+                ytext.delete(0, ytext.length);
+                ytext.insert(0, content);
+            });
+        }
+    };
 
-  return { ytext, setContent };
+    return { ytext, setContent, isSynced };
 }

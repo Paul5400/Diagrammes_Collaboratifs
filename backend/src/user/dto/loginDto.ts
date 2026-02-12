@@ -1,6 +1,5 @@
 import { IsString, IsEmail, IsOptional } from 'class-validator';
 export class LoginDto {
-
   @IsString()
   githubId: string;
 
@@ -19,5 +18,4 @@ export class LoginDto {
   @IsString()
   @IsOptional()
   accessToken?: string;
-
 }

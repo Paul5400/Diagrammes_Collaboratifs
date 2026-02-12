@@ -11,6 +11,7 @@
 - gestion des 404
 - tests unitaires
 - CI/CD
+- **Linters configurés** : ESLint + Prettier pour backend et frontend, hadolint pour Docker, Prisma format
 
 ## Priorité 3
 - optimisation performance

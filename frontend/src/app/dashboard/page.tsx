@@ -1,45 +1,49 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
-import Link from "next/link";
-import { Logo } from "../../components/Logo";
-import { ProjectCard } from "../../components/ProjectCard";
-import { UserMenu } from "../../components/UserMenu";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
+import { Logo } from '../../components/Logo';
+import { ProjectCard } from '../../components/ProjectCard';
+import { UserMenu } from '../../components/UserMenu';
+import { CreateDiagramDialog } from '../../components/dashboard/CreateDiagramDialog';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // useEffect : vérification de l'authentification au chargement de la page
   useEffect(() => {
     const fetchUser = async () => {
-      const token = Cookies.get("diagrammer_token");
+      const token = Cookies.get('diagrammer_token');
       if (!token) {
-        router.push("/login");
+        router.push('/login');
         return;
       }
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
           setIsAuthenticated(true);
         } else {
-          Cookies.remove("diagrammer_token");
-          router.push("/login");
+          Cookies.remove('diagrammer_token');
+          router.push('/login');
         }
       } catch (error) {
-        console.error("Error fetching user:", error);
-        router.push("/login");
+        console.error('Error fetching user:', error);
+        router.push('/login');
       }
     };
 
@@ -51,14 +55,18 @@ export default function DashboardPage() {
   }
 
   const projects = [
-    { id: "1", title: "System Architecture V2", lastEdited: "Modifié il y a 2 heures" },
-    { id: "2", title: "Authentication Flow", lastEdited: "Modifié hier" },
-    { id: "3", title: "API Schema", lastEdited: "Modifié il y a 3 jours" },
+    {
+      id: '1',
+      title: 'System Architecture V2',
+      lastEdited: 'Modifié il y a 2 heures',
+    },
+    { id: '2', title: 'Authentication Flow', lastEdited: 'Modifié hier' },
+    { id: '3', title: 'API Schema', lastEdited: 'Modifié il y a 3 jours' },
   ];
 
   const handleLogout = () => {
-    Cookies.remove("diagrammer_token");
-    router.push("/login");
+    Cookies.remove('diagrammer_token');
+    router.push('/login');
   };
 
   return (
@@ -67,9 +75,9 @@ export default function DashboardPage() {
         <div className="max-w-[1200px] mx-auto flex items-center justify-between p-6">
           <Logo />
           <UserMenu
-            name={user.username || "User"}
+            name={user.username || 'User'}
             plan="GitHub Account"
-            initials={(user.username || "U").substring(0, 2).toUpperCase()}
+            initials={(user.username || 'U').substring(0, 2).toUpperCase()}
             avatarUrl={user.avatarUrl}
           />
         </div>
@@ -78,31 +86,39 @@ export default function DashboardPage() {
       <main className="flex-1 max-w-[1200px] mx-auto w-full p-8">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-[var(--text-secondary)] mb-2">Tableau de bord</p>
-            <h1 className="text-4xl font-semibold tracking-tight">Mes diagrammes</h1>
+            <p className="text-sm uppercase tracking-[0.3em] text-[var(--text-secondary)] mb-2">
+              Tableau de bord
+            </p>
+            <h1 className="text-4xl font-semibold tracking-tight">
+              Mes diagrammes
+            </h1>
           </div>
           <div className="flex gap-3">
-            <Link
-              href="/diagramme/new"
+            <button
+              onClick={() => setIsCreateDialogOpen(true)}
               className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-medium transition-all bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-0.5"
             >
               + Nouveau diagramme
-            </Link>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2.5 rounded-lg text-sm font-medium border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all"
-            >
-              Se déconnecter
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
           {projects.map((project) => (
-            <ProjectCard key={project.id} id={project.id} title={project.title} lastEdited={project.lastEdited} />
+            <ProjectCard
+              key={project.id}
+              id={project.id}
+              title={project.title}
+              lastEdited={project.lastEdited}
+            />
           ))}
         </div>
       </main>
+
+      <CreateDiagramDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+      />
     </div>
   );
 }

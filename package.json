@@ -1,6 +1,18 @@
 {
+  "scripts": {
+    "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
+    "format": "npm run format --workspace=backend && npm run format --workspace=frontend",
+    "format:prisma": "npm run format:prisma --workspace=backend",
+    "build:lint": "npm run lint && npm run format && npm run format:prisma"
+  },
+  "workspaces": ["backend", "frontend"],
   "dependencies": {
     "@nestjs/platform-express": "^11.1.12",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "prettier": "^3.8.1"
   }
 }

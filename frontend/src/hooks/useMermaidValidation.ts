@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
@@ -42,12 +42,11 @@ export function useMermaidValidation(editor: editor.IStandaloneCodeEditor | null
 
             monaco.editor.setModelMarkers(editor.getModel()!, 'mermaid', markers);
         }
-    }, [editor, monaco]);
 
     const debouncedValidate = useCallback(debounce(validate, APP_CONFIG.VALIDATION_DEBOUNCE_MS), [validate]);
 
-    useEffect(() => {
-        if (!editor || !monaco) return;
+  useEffect(() => {
+    if (!editor || !monaco) return;
 
         // onDidChangeModelContent : Listener appelé à chaque modification de l'éditeur
         const disposable = editor.onDidChangeModelContent(() => {

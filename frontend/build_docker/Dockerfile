@@ -8,6 +8,9 @@ COPY package*.json ./
 # Installation des dépendances
 RUN npm install
 
+# Linting et formatage (optionnel pour CI/CD)
+# RUN npm run lint && npm run format
+
 # Copie du code source
 COPY . .
 

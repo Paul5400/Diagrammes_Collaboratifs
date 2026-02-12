@@ -1,4 +1,4 @@
-import { DiagramEditor } from "../../../components/DiagramEditor";
+import { DiagramEditor } from '../../../components/DiagramEditor';
 
 export default async function DiagramPage({
   params,

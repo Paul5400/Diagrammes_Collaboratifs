@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import { ConfigService } from '@nestjs/config';
 
@@ -58,11 +63,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       return exists === 1;
     } catch (error) {
       this.logger.error('Failed to check blacklist', error);
-      return false; 
+      return false;
     }
   }
 
-  async storeGithubToken(githubId: string, accessToken: string, ttl: number = 604800): Promise<void> {
+  async storeGithubToken(
+    githubId: string,
+    accessToken: string,
+    ttl: number = 604800,
+  ): Promise<void> {
     try {
       await this.redis.setEx(`github:token:${githubId}`, ttl, accessToken);
       this.logger.log(`GitHub token stored for ${githubId} with TTL ${ttl}s`);

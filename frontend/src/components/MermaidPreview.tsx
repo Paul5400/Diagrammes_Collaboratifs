@@ -14,7 +14,7 @@ import { APP_CONFIG } from '@/config/AppConfig';
  */
 const MERMAID_CONFIG = {
   startOnLoad: false,
-  theme: 'dark',
+  theme: 'dark' as const,
   suppressErrorConsole: true,
   themeVariables: {
     primaryColor: '#7c3aed',

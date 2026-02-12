@@ -48,6 +48,7 @@ mermaid.initialize(MERMAID_CONFIG);
 
 interface MermaidPreviewProps {
   mermaidCodeSource: MermaidCode; // Le code texte Mermaid à transformer en SVG
+  onRender?: (svgContent: string) => void;
 }
 
 /**
@@ -58,6 +59,7 @@ interface MermaidPreviewProps {
 export function MermaidPreview(props: MermaidPreviewProps) {
   // On reçoit l'unique objet 'props' et on récupère le code manuellement
   const currentMermaidSourceCode = props.mermaidCodeSource;
+  const onRenderCallback = props.onRender;
 
   // État contenant le code SVG généré par Mermaid
   const [renderedSvgMarkupContent, setRenderedSvgMarkupContent] =
@@ -114,6 +116,11 @@ export function MermaidPreview(props: MermaidPreviewProps) {
 
         // Mise à jour de l'affichage graphique
         setRenderedSvgMarkupContent(generatedSvgOutput);
+
+        // Notification au parent
+        if (onRenderCallback) {
+          onRenderCallback(generatedSvgOutput);
+        }
       } catch (renderingProcessError) {
         // En silence pour éviter de saccader l'UI pendant que l'utilisateur tape
         console.debug(

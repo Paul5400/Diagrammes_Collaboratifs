@@ -15,6 +15,7 @@ interface EditorHeaderProps {
   className?: string;
   currentUserData?: User | null;
   diagramType: string;
+  onExportClick?: () => void;
 }
 
 export function EditorHeader(props: EditorHeaderProps) {
@@ -92,11 +93,15 @@ export function EditorHeader(props: EditorHeaderProps) {
 
         <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--accent-primary)] text-white text-xs font-medium hover:bg-[var(--accent-hover)] transition-all shadow-[0_0_15px_var(--accent-glow)]">
           <Share2 size={14} />
-          Share
+          Partager
         </button>
 
-        <button className="p-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all">
+        <button
+          onClick={props.onExportClick}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all"
+        >
           <Download size={16} />
+          Exporter
         </button>
 
         <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />

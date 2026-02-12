@@ -10,6 +10,7 @@ import { DiagramTemplate } from './DiagramTemplates';
 import { MermaidCode, DiagramId } from '@/types/DiagramTypes';
 import { useSearchParams } from 'next/navigation';
 import { DIAGRAM_TEMPLATES } from './DiagramTemplates';
+import { ExportDiagramDialog } from './ExportDiagramDialog';
 
 
 /**
@@ -103,6 +104,14 @@ export function DiagramEditor(diagram: DiagramEditorProps) {
   // Calcul du type actuel pour l'afficher dans le header
   const currentDiagramType = getDiagramTypeFromCode(mermaidDiagramSourceCode);
 
+  // Gestion de l'export
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
+
+  const handleMermaidRender = useCallback((svg: string) => {
+    setCurrentSvgContent(svg);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">
       {/* EN-TÊTE */}
@@ -110,6 +119,7 @@ export function DiagramEditor(diagram: DiagramEditorProps) {
         projectTitleLabel={nameParam || "System Architecture V2"}
         currentUserData={authenticatedUserInstance}
         diagramType={currentDiagramType}
+        onExportClick={() => setIsExportDialogOpen(true)}
       />
 
       {/* ZONE PRINCIPALE */}
@@ -126,9 +136,20 @@ export function DiagramEditor(diagram: DiagramEditorProps) {
 
         {/* PANNEAU DROIT */}
         <section className="w-[55%] h-full relative flex flex-col bg-[#050505]">
-          <MermaidPreview mermaidCodeSource={mermaidDiagramSourceCode} />
+          <MermaidPreview
+            mermaidCodeSource={mermaidDiagramSourceCode}
+            onRender={handleMermaidRender}
+          />
         </section>
       </main>
+
+      <ExportDiagramDialog
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        mermaidCode={mermaidDiagramSourceCode}
+        svgContent={currentSvgContent}
+        diagramName={nameParam || "diagram"}
+      />
     </div>
   );
 }

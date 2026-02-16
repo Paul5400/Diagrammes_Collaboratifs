@@ -11,6 +11,25 @@ interface GithubUser {
   login: string;
 }
 
+interface GithubCommit {
+  sha: string;
+  commit: {
+    author: {
+      name: string;
+      email: string;
+      date: string;
+    };
+    message: string;
+  };
+  html_url: string;
+}
+
+interface GithubFileContent {
+  sha: string;
+  content: string;
+  encoding: string;
+}
+
 @Injectable()
 export class GitService {
   private readonly logger = new Logger(GitService.name);
@@ -153,6 +172,147 @@ Ce projet contient des diagrammes collaboratifs versionnés avec Git.
     }
 
     this.logger.log(`Repository deleted: ${owner}/${repo}`);
+  }
+
+  /**
+   * Obtenir le SHA d'un fichier (nécessaire pour les mises à jour)
+   */
+  async getFileSha(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    path: string,
+  ): Promise<string | null> {
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}/contents/${path}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (response.status === 404) {
+      return null; // Le fichier n'existe pas encore
+    }
+
+    if (!response.ok) {
+      this.logger.error(`Failed to get file SHA: ${response.statusText}`);
+      throw new BadRequestException('Impossible de récupérer le SHA du fichier');
+    }
+
+    const data: GithubFileContent = await response.json();
+    return data.sha;
+  }
+
+  /**
+   * Créer ou mettre à jour un fichier dans le dépôt
+   */
+  async createOrUpdateFile(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    path: string,
+    content: string,
+    message: string,
+    sha?: string,
+  ): Promise<{ sha: string; url: string }> {
+    const base64Content = Buffer.from(content).toString('base64');
+
+    const body: any = {
+      message,
+      content: base64Content,
+    };
+
+    // Si un SHA est fourni, c'est une mise à jour
+    if (sha) {
+      body.sha = sha;
+    }
+
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}/contents/${path}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      this.logger.error(`Failed to create/update file: ${JSON.stringify(error)}`);
+      throw new BadRequestException('Impossible de créer ou mettre à jour le fichier');
+    }
+
+    const result = await response.json();
+    this.logger.log(`File ${sha ? 'updated' : 'created'}: ${path} in ${owner}/${repo}`);
+
+    return {
+      sha: result.content.sha,
+      url: result.content.html_url,
+    };
+  }
+
+  /**
+   * Obtenir l'historique des commits pour un fichier spécifique
+   */
+  async getFileHistory(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    path: string,
+  ): Promise<GithubCommit[]> {
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}/commits?path=${encodeURIComponent(path)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      this.logger.error(`Failed to get file history: ${response.statusText}`);
+      throw new BadRequestException('Impossible de récupérer l\'historique du fichier');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Obtenir le contenu d'un fichier à un commit spécifique
+   */
+  async getFileAtCommit(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    path: string,
+    sha: string,
+  ): Promise<string> {
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}/contents/${path}?ref=${sha}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      this.logger.error(`Failed to get file at commit: ${response.statusText}`);
+      throw new BadRequestException('Impossible de récupérer le fichier à ce commit');
+    }
+
+    const data: GithubFileContent = await response.json();
+    
+    // Décoder le contenu Base64
+    return Buffer.from(data.content, 'base64').toString('utf-8');
   }
 
   /**

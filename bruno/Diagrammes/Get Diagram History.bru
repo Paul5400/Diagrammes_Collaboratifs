@@ -1,0 +1,55 @@
+meta {
+  name: Get Diagram History
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/diagrammes/:id/history
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: {{diagrammeId}}
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  # Récupérer l'historique d'un diagramme
+  
+  Récupère l'historique des versions d'un diagramme depuis GitHub.
+  
+  ## Prérequis
+  - Le diagramme doit avoir été sauvegardé au moins une fois (cheminGit non null)
+  - Le projet doit avoir un dépôt GitHub associé
+  
+  ## Réponse
+  ```json
+  [
+    {
+      "sha": "abc123def456...",
+      "message": "Update: Mon diagramme",
+      "author": "Jean Dupont",
+      "date": "2026-02-16T10:30:00Z",
+      "url": "https://github.com/user/repo/commit/abc123..."
+    },
+    {
+      "sha": "xyz789...",
+      "message": "Initial commit",
+      "author": "Jean Dupont",
+      "date": "2026-02-15T14:20:00Z",
+      "url": "https://github.com/user/repo/commit/xyz789..."
+    }
+  ]
+  ```
+  
+  ## Codes d'erreur
+  - 401 Unauthorized : Token JWT invalide
+  - 403 Forbidden : Vous n'avez pas accès à ce diagramme
+  - 404 Not Found : Diagramme introuvable
+  - 400 Bad Request : Diagramme pas encore sauvegardé sur GitHub
+}

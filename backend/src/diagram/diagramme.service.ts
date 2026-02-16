@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
+import { GitService } from '../git/git.service';
 import { Diagramme } from '@prisma/client';
 import { CreateDiagrammeDto } from './dto/create-diagramme.dto';
 import { UpdateDiagrammeDto } from './dto/update-diagramme.dto';
@@ -18,6 +19,7 @@ export class DiagrammeService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly userService: UserService,
+        private readonly gitService: GitService,
     ) { }
 
     /**
@@ -176,5 +178,137 @@ export class DiagrammeService {
         });
 
         this.logger.log(`Diagramme supprimé: ${diagrammeId}`);
+    }
+
+    /**
+     * Récupérer l'historique des versions d'un diagramme depuis GitHub
+     */
+    async getHistory(
+        diagrammeId: string,
+        githubId: string,
+    ): Promise<
+        Array<{
+            sha: string;
+            message: string;
+            author: string;
+            date: string;
+            url: string;
+        }>
+    > {
+        const githubUser = await this.userService.findByGithubId(githubId);
+        if (!githubUser) {
+            throw new NotFoundException('Utilisateur introuvable');
+        }
+
+        const diagramme = await this.prisma.diagramme.findUnique({
+            where: { id: diagrammeId },
+            include: { projet: true },
+        });
+
+        if (!diagramme) {
+            throw new NotFoundException('Diagramme introuvable');
+        }
+
+        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+            throw new ForbiddenException("Vous n'avez pas accès à ce diagramme");
+        }
+
+        if (!diagramme.cheminGit) {
+            throw new BadRequestException(
+                'Ce diagramme n\'a pas encore été sauvegardé sur GitHub',
+            );
+        }
+
+        if (!diagramme.projet?.cheminGit) {
+            throw new BadRequestException(
+                'Ce projet n\'a pas de dépôt GitHub associé',
+            );
+        }
+
+        const accessToken = await this.userService.getGithubAccessToken(githubId);
+        if (!accessToken) {
+            throw new BadRequestException(
+                'Token GitHub non disponible, reconnectez-vous',
+            );
+        }
+
+        const [owner, repo] = diagramme.projet.cheminGit.split('/');
+
+        const commits = await this.gitService.getFileHistory(
+            accessToken,
+            owner,
+            repo,
+            diagramme.cheminGit,
+        );
+
+        return commits.map((commit) => ({
+            sha: commit.sha,
+            message: commit.commit.message,
+            author: commit.commit.author.name,
+            date: commit.commit.author.date,
+            url: commit.html_url,
+        }));
+    }
+
+    /**
+     * Récupérer le contenu d'un diagramme à une version spécifique
+     */
+    async getVersionAtCommit(
+        diagrammeId: string,
+        sha: string,
+        githubId: string,
+    ): Promise<{ contenu: string; sha: string; titre: string }> {
+        const githubUser = await this.userService.findByGithubId(githubId);
+        if (!githubUser) {
+            throw new NotFoundException('Utilisateur introuvable');
+        }
+
+        const diagramme = await this.prisma.diagramme.findUnique({
+            where: { id: diagrammeId },
+            include: { projet: true },
+        });
+
+        if (!diagramme) {
+            throw new NotFoundException('Diagramme introuvable');
+        }
+
+        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+            throw new ForbiddenException("Vous n'avez pas accès à ce diagramme");
+        }
+
+        if (!diagramme.cheminGit) {
+            throw new BadRequestException(
+                'Ce diagramme n\'a pas encore été sauvegardé sur GitHub',
+            );
+        }
+
+        if (!diagramme.projet?.cheminGit) {
+            throw new BadRequestException(
+                'Ce projet n\'a pas de dépôt GitHub associé',
+            );
+        }
+
+        const accessToken = await this.userService.getGithubAccessToken(githubId);
+        if (!accessToken) {
+            throw new BadRequestException(
+                'Token GitHub non disponible, reconnectez-vous',
+            );
+        }
+
+        const [owner, repo] = diagramme.projet.cheminGit.split('/');
+
+        const contenu = await this.gitService.getFileAtCommit(
+            accessToken,
+            owner,
+            repo,
+            diagramme.cheminGit,
+            sha,
+        );
+
+        return {
+            contenu,
+            sha,
+            titre: diagramme.titre,
+        };
     }
 }

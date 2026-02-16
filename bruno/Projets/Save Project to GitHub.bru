@@ -1,0 +1,55 @@
+meta {
+  name: Save Project to GitHub
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/projets/:id/save
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: {{projetId}}
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  # Sauvegarder un projet vers GitHub
+  
+  Sauvegarde tous les diagrammes d'un projet vers le dépôt GitHub associé.
+  
+  ## Détails
+  - Le propriétaire ou les collaborateurs avec droit d'écriture peuvent sauvegarder
+  - Chaque diagramme est sauvegardé dans un fichier séparé : `diagrams/{slug}.mmd`
+  - Si le fichier existe déjà, il est mis à jour (nouveau commit)
+  - Le champ `cheminGit` de chaque diagramme est mis à jour
+  - Un SHA (identifiant unique) est utilisé pour éviter d'écraser des modifications
+  
+  ## Réponse
+  ```json
+  {
+    "success": true,
+    "savedDiagrams": [
+      {
+        "id": "uuid",
+        "titre": "Mon diagramme",
+        "path": "diagrams/mon-diagramme.mmd",
+        "sha": "abc123...",
+        "url": "https://github.com/user/repo/blob/main/diagrams/mon-diagramme.mmd"
+      }
+    ],
+    "errors": []
+  }
+  ```
+  
+  ## Codes d'erreur
+  - 401 Unauthorized : Token JWT invalide
+  - 403 Forbidden : Seul le propriétaire peut sauvegarder
+  - 404 Not Found : Projet introuvable
+  - 400 Bad Request : Pas de dépôt GitHub associé
+}

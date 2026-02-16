@@ -115,9 +115,9 @@ export class ProjetService {
             utilisateur: {
               select: {
                 id: true,
-                nom: true,
-                prenom: true,
+                username: true,
                 email: true,
+                avatarUrl: true,
               },
             },
           },
@@ -181,5 +181,136 @@ export class ProjetService {
     });
 
     this.logger.log(`Projet supprimé: ${projet.id}`);
+  }
+
+  /**
+   * Sauvegarder tous les diagrammes d'un projet vers GitHub
+   */
+  async saveDiagramsToGithub(
+    projetId: string,
+    githubId: string,
+  ): Promise<{
+    success: boolean;
+    savedDiagrams: Array<{
+      id: string;
+      titre: string;
+      path: string;
+      sha: string;
+      url: string;
+    }>;
+    errors: Array<{ id: string; titre: string; error: string }>;
+  }> {
+    const githubUser = await this.userService.findByGithubId(githubId);
+    if (!githubUser) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    const projet = await this.prisma.projet.findUnique({
+      where: { id: projetId },
+      include: { 
+        diagrammes: true,
+        collaborations: true,
+      },
+    });
+
+    if (!projet) {
+      throw new NotFoundException('Projet introuvable');
+    }
+
+    // Vérifier si l'utilisateur est propriétaire OU collaborateur avec droit d'écriture
+    const isOwner = projet.idProprietaire === githubUser.id;
+    const hasWriteAccess = projet.collaborations.some(
+      (collab) => 
+        collab.idUtilisateur === githubUser.id && 
+        collab.droit === 'ecriture'
+    );
+
+    if (!isOwner && !hasWriteAccess) {
+      throw new ForbiddenException(
+        'Vous devez être propriétaire ou collaborateur avec droit d\'écriture pour sauvegarder ce projet'
+      );
+    }
+
+    if (!projet.cheminGit) {
+      throw new BadRequestException('Ce projet n\'a pas de dépôt GitHub associé');
+    }
+
+    const accessToken = await this.userService.getGithubAccessToken(githubId);
+    if (!accessToken) {
+      throw new BadRequestException('Token GitHub non disponible, reconnectez-vous');
+    }
+
+    const [owner, repo] = projet.cheminGit.split('/');
+    const savedDiagrams: Array<{
+      id: string;
+      titre: string;
+      path: string;
+      sha: string;
+      url: string;
+    }> = [];
+    const errors: Array<{ id: string; titre: string; error: string }> = [];
+
+    for (const diagramme of projet.diagrammes) {
+      try {
+        const fileName = this.gitService.slugify(diagramme.titre) || `diagram-${diagramme.id}`;
+        const filePath = `diagrams/${fileName}.mmd`;
+
+        // Récupérer le SHA actuel du fichier s'il existe
+        const currentSha = await this.gitService.getFileSha(
+          accessToken,
+          owner,
+          repo,
+          filePath,
+        );
+
+        // Créer ou mettre à jour le fichier
+        const result = await this.gitService.createOrUpdateFile(
+          accessToken,
+          owner,
+          repo,
+          filePath,
+          diagramme.contenu || '',
+          `Update: ${diagramme.titre}`,
+          currentSha || undefined,
+        );
+
+        // Mettre à jour le cheminGit dans la base de données
+        await this.prisma.diagramme.update({
+          where: { id: diagramme.id },
+          data: { cheminGit: filePath },
+        });
+
+        savedDiagrams.push({
+          id: diagramme.id,
+          titre: diagramme.titre,
+          path: filePath,
+          sha: result.sha,
+          url: result.url,
+        });
+
+        this.logger.log(`Diagramme sauvegardé: ${diagramme.titre} -> ${filePath}`);
+      } catch (error) {
+        this.logger.error(
+          `Erreur lors de la sauvegarde du diagramme ${diagramme.id}: ${error.message}`,
+        );
+        errors.push({
+          id: diagramme.id,
+          titre: diagramme.titre,
+          error: error.message,
+        });
+      }
+    }
+
+    // Mettre à jour la date de modification du projet
+    await this.prisma.projet.update({
+      where: { id: projetId },
+      data: { dateModification: new Date() },
+    });
+
+    return {
+      success: errors.length === 0,
+      savedDiagrams,
+      errors,
+    };
   }
 }

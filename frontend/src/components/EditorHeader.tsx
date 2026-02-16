@@ -46,34 +46,8 @@ export function EditorHeader(props: EditorHeaderProps) {
           <h1 className="text-sm font-semibold text-white tracking-tight leading-tight">
             {currentProjectTitle}
           </h1>
-          <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="flex items-center gap-1 opacity-80">
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m7 15 5 5 5-5" />
-                <path d="m7 9 5-5 5 5" />
-              </svg>
-              main / current
-            </span>
-          </div>
         </div>
 
-        <div className="h-4 w-[1px] bg-[var(--border-subtle)]" />
-
-        {/* Badge Type de Diagramme (Lecture seule) */}
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[#1a1a1d] text-[var(--text-secondary)] text-xs cursor-default">
-          <Layout size={14} />
-          <span className="font-medium">{currentDiagramType}</span>
-        </div>
       </div>
 
       <div className="flex items-center gap-3">

@@ -13,6 +13,7 @@ import { useMermaidValidation } from '@/hooks/useMermaidValidation';
 import { MERMAID_KEYWORDS } from '@/config/MermaidKeywords';
 import { MONACO_EDITOR_CONFIGURATION_OPTIONS } from '@/config/MonacoConfig';
 import { MermaidCode, DiagramId } from '@/types/DiagramTypes';
+import { Layout } from 'lucide-react';
 
 /**
  * PROPS : CollaborativeEditorProps
@@ -24,6 +25,7 @@ interface CollaborativeEditorProps {
   sharedDocumentId: DiagramId;
   onContentUpdate: (updatedContent: MermaidCode | undefined) => void;
   initialContentValue?: MermaidCode;
+  currentDiagramType?: string;
 }
 
 /**
@@ -124,8 +126,17 @@ export const CollaborativeEditor = forwardRef<
   );
 
   return (
-    <div className="flex-1 h-full border-r border-[var(--border-subtle)] bg-[#0c0c0e]">
-      <div className="h-full pt-4">
+    <div className="flex-1 h-full border-r border-[var(--border-subtle)] bg-[#0c0c0e] flex flex-col">
+      {/* Badge Type de Diagramme */}
+      {props.currentDiagramType && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[#1a1a1d] text-[var(--text-secondary)] text-xs cursor-default">
+            <Layout size={14} />
+            <span className="font-medium">{props.currentDiagramType}</span>
+          </div>
+        </div>
+      )}
+      <div className="flex-1">
         <Editor
           height="100%"
           defaultLanguage="mermaid"

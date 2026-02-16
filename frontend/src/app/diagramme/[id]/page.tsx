@@ -10,7 +10,7 @@ export default async function DiagramPage({
 
   return (
     <div className="h-screen w-screen overflow-hidden">
-      <DiagramEditor id={id} />
+      <DiagramEditor id={id} projectName="Diagramme" />
     </div>
   );
 }

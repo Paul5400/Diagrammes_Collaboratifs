@@ -22,7 +22,6 @@ model Utilisateur {
   dateInscription  DateTime        @default(now()) @map("date_inscription") @db.Timestamp()
   
   // Relations
-  diagrammes       Diagramme[]     @relation("ProprietaireDiagramme")
   collaborations   Collaboration[]
 
   @@map("utilisateurs")
@@ -55,7 +54,7 @@ model Projet {
 model Diagramme {
   id                 String          @id @default(dbgenerated("gen_random_uuid()")) @map("id_diagramme") @db.Uuid
   idProprietaire     String          @map("id_proprietaire") @db.Uuid
-  idProjet           String?         @map("id_projet") @db.Uuid
+  idProjet           String          @map("id_projet") @db.Uuid
   titre              String          @db.VarChar(100)
   type               TypeDiagramme
   contenu            String?         @db.Text
@@ -66,8 +65,8 @@ model Diagramme {
   dateModification   DateTime        @default(now()) @updatedAt @map("date_modification") @db.Timestamp()
   
   // Relations
-  proprietaire       Utilisateur     @relation("ProprietaireDiagramme", fields: [idProprietaire], references: [id], onDelete: Cascade)
-  projet             Projet?         @relation("ProjetDiagrammes", fields: [idProjet], references: [id], onDelete: Cascade)
+  proprietaire       GithubUser      @relation("ProprietaireDiagramme", fields: [idProprietaire], references: [id], onDelete: Cascade)
+  projet             Projet          @relation("ProjetDiagrammes", fields: [idProjet], references: [id], onDelete: Cascade)
   collaborations     Collaboration[]
 
   @@map("diagrammes")
@@ -130,7 +129,8 @@ model GithubUser {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp()
   
   // Relations
-  projets     Projet[] @relation("ProprietaireProjet")
+  projets      Projet[]     @relation("ProprietaireProjet")
+  diagrammes   Diagramme[]  @relation("ProprietaireDiagramme")
 
   @@map("github_users")
 }

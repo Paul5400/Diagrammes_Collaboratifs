@@ -44,10 +44,20 @@ services:
       - CHOKIDAR_USEPOLLING=true 
     command: >
       sh -c "
+        echo 'Attente de la base de données...' &&
         while ! nc -z diagrammer.db 5432; do sleep 1; done &&
-        npm install --include=dev &&
+        echo 'Base de données prête !' &&
+        
+        # On installe les dépendances si nécessaire
+        npm install &&
+        
+        echo 'Génération du client Prisma...' &&
         npx prisma generate &&
-        (npx prisma migrate deploy || npx prisma db push --accept-data-loss) &&
+        
+        echo 'Synchronisation du schéma (db push)...' &&
+        npx prisma db push --accept-data-loss &&
+        
+        echo 'Démarrage de l application...' &&
         npm run start:dev
       "
     restart: unless-stopped

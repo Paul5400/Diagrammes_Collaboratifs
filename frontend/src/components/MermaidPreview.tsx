@@ -14,7 +14,7 @@ import { APP_CONFIG } from '@/config/AppConfig';
  */
 const MERMAID_CONFIG = {
   startOnLoad: false,
-  theme: 'dark',
+  theme: 'dark' as const,
   suppressErrorConsole: true,
   themeVariables: {
     primaryColor: '#7c3aed',
@@ -39,8 +39,8 @@ const MERMAID_CONFIG = {
     noteBorderColor: '#52525b',
     noteTextColor: '#fff',
   },
-  securityLevel: 'loose',
-  fontFamily: 'Inter, sans-serif',
+  securityLevel: 'loose' as const,
+  fontFamily: 'Inter, sans-serif' as const,
 };
 
 // Initialisation globale de Mermaid

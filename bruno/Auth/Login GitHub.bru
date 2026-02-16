@@ -1,0 +1,27 @@
+meta {
+  name: Login GitHub
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/auth/github
+  body: none
+  auth: none
+}
+
+docs {
+  # Login GitHub OAuth
+  
+  Redirige l'utilisateur vers GitHub pour l'authentification OAuth.
+  
+  ## Flow complet :
+  1. Frontend redirige vers `/auth/github`
+  2. GitHub demande l'autorisation
+  3. Callback vers `/auth/github/callback`
+  4. Redirection vers `http://localhost:3000/login?token=JWT_TOKEN`
+  
+  ## Scopes OAuth :
+  - `user:email` : récupérer l'email
+  - `repo` : créer/gérer des dépôts
+}

@@ -1,0 +1,51 @@
+meta {
+  name: Delete Project
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/projets/:id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: PROJECT_UUID_HERE
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  # Supprimer un projet
+  
+  Supprime un projet et son dépôt GitHub associé.
+  
+  ## Headers requis :
+  - `Authorization: Bearer <JWT_TOKEN>`
+  
+  ## Paramètres URL :
+  - `id` (UUID) : Identifiant du projet
+  
+  ## Réponse (204 No Content) :
+  - Aucun contenu retourné en cas de succès
+  
+  ## Actions automatiques :
+  1. Suppression du dépôt GitHub via API
+  2. Suppression en cascade des diagrammes associés
+  3. Suppression des collaborations
+  4. Suppression du projet de la BD
+  
+  ## Permissions :
+  - Seul le **propriétaire** peut supprimer le projet
+  
+  ## Erreurs :
+  - 403 Forbidden : seul le propriétaire peut supprimer
+  - 404 Not Found : projet introuvable
+  
+  ## ⚠️ Attention :
+  - Action **irréversible**
+  - Le dépôt GitHub est **définitivement supprimé**
+}

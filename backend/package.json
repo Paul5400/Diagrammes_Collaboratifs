@@ -35,7 +35,7 @@
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
     "@types/passport-github2": "^1.2.9",
-    "class-validator": "^0.14.1",
+    "class-validator": "^0.14.3",
     "ioredis": "^5.8.2",
     "isomorphic-git": "^1.36.1",
     "passport": "^0.7.0",

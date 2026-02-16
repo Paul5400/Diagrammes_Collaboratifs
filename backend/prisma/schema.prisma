@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -13,16 +14,16 @@ datasource db {
 // Modèle Utilisateur
 // ================================
 model Utilisateur {
-  id               String          @id @default(dbgenerated("gen_random_uuid()")) @map("id_utilisateur") @db.Uuid
-  nom              String          @db.VarChar(50)
-  prenom           String          @db.VarChar(50)
-  email            String          @unique @db.VarChar(100)
-  motDePasse       String          @map("mot_de_passe") @db.VarChar(255)
-  role             Role            @default(utilisateur)
-  dateInscription  DateTime        @default(now()) @map("date_inscription") @db.Timestamp()
-  
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @map("id_utilisateur") @db.Uuid
+  nom             String   @db.VarChar(50)
+  prenom          String   @db.VarChar(50)
+  email           String   @unique @db.VarChar(100)
+  motDePasse      String   @map("mot_de_passe") @db.VarChar(255)
+  role            Role     @default(utilisateur)
+  dateInscription DateTime @default(now()) @map("date_inscription") @db.Timestamp()
+
   // Relations
-  collaborations   Collaboration[]
+  collaborations Collaboration[]
 
   @@map("utilisateurs")
 }
@@ -31,19 +32,19 @@ model Utilisateur {
 // Modèle Projet
 // ================================
 model Projet {
-  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @map("id_projet") @db.Uuid
-  idProprietaire     String          @map("id_proprietaire") @db.Uuid
-  titre              String          @db.VarChar(150)
-  description        String?         @db.Text
-  cheminGit          String?         @map("chemin_git") @db.VarChar(255)
-  public             Boolean         @default(false)
-  dateCreation       DateTime        @default(now()) @map("date_creation") @db.Timestamp()
-  dateModification   DateTime        @default(now()) @updatedAt @map("date_modification") @db.Timestamp()
-  
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @map("id_projet") @db.Uuid
+  idProprietaire   String   @map("id_proprietaire") @db.Uuid
+  titre            String   @db.VarChar(150)
+  description      String?  @db.Text
+  cheminGit        String?  @map("chemin_git") @db.VarChar(255)
+  public           Boolean  @default(false)
+  dateCreation     DateTime @default(now()) @map("date_creation") @db.Timestamp()
+  dateModification DateTime @default(now()) @updatedAt @map("date_modification") @db.Timestamp()
+
   // Relations
-  proprietaire       GithubUser      @relation("ProprietaireProjet", fields: [idProprietaire], references: [id], onDelete: Cascade)
-  diagrammes         Diagramme[]     @relation("ProjetDiagrammes")
-  collaborations     Collaboration[] @relation("ProjetCollaborations")
+  proprietaire   GithubUser      @relation("ProprietaireProjet", fields: [idProprietaire], references: [id], onDelete: Cascade)
+  diagrammes     Diagramme[]     @relation("ProjetDiagrammes")
+  collaborations Collaboration[] @relation("ProjetCollaborations")
 
   @@map("projets")
 }
@@ -76,17 +77,17 @@ model Diagramme {
 // Modèle Collaboration
 // ================================
 model Collaboration {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @map("id_collaboration") @db.Uuid
-  idUtilisateur   String        @map("id_utilisateur") @db.Uuid
-  idProjet        String?       @map("id_projet") @db.Uuid
-  idDiagramme     String?       @map("id_diagramme") @db.Uuid
-  droit           Droit         @default(lecture)
-  dateAjout       DateTime      @default(now()) @map("date_ajout") @db.Timestamp()
-  
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @map("id_collaboration") @db.Uuid
+  idUtilisateur String   @map("id_utilisateur") @db.Uuid
+  idProjet      String?  @map("id_projet") @db.Uuid
+  idDiagramme   String?  @map("id_diagramme") @db.Uuid
+  droit         Droit    @default(lecture)
+  dateAjout     DateTime @default(now()) @map("date_ajout") @db.Timestamp()
+
   // Relations
-  utilisateur     Utilisateur   @relation(fields: [idUtilisateur], references: [id], onDelete: Cascade)
-  projet          Projet?       @relation("ProjetCollaborations", fields: [idProjet], references: [id], onDelete: Cascade)
-  diagramme       Diagramme?    @relation(fields: [idDiagramme], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur @relation(fields: [idUtilisateur], references: [id], onDelete: Cascade)
+  projet      Projet?     @relation("ProjetCollaborations", fields: [idProjet], references: [id], onDelete: Cascade)
+  diagramme   Diagramme?  @relation(fields: [idDiagramme], references: [id], onDelete: Cascade)
 
   @@unique([idUtilisateur, idProjet], name: "unique_utilisateur_projet")
   @@map("collaborations")
@@ -120,14 +121,14 @@ enum Droit {
 // GitHub OAuth users
 // ================================
 model GithubUser {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  githubId    String   @unique @map("github_id")
-  username    String?  @db.VarChar(150)
-  email       String?  @unique @db.VarChar(255)
-  avatarUrl   String?  @map("avatar_url") @db.VarChar(500)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp()
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp()
-  
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  githubId  String   @unique @map("github_id")
+  username  String?  @db.VarChar(150)
+  email     String?  @unique @db.VarChar(255)
+  avatarUrl String?  @map("avatar_url") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp()
+
   // Relations
   projets      Projet[]     @relation("ProprietaireProjet")
   diagrammes   Diagramme[]  @relation("ProprietaireDiagramme")

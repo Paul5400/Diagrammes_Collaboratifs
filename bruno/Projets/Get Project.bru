@@ -1,0 +1,72 @@
+meta {
+  name: Get Project
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/projets/:id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: PROJECT_UUID_HERE
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  # Récupérer un projet spécifique
+  
+  Retourne les détails d'un projet avec ses diagrammes et collaborateurs.
+  
+  ## Headers requis :
+  - `Authorization: Bearer <JWT_TOKEN>`
+  
+  ## Paramètres URL :
+  - `id` (UUID) : Identifiant du projet
+  
+  ## Réponse (200 OK) :
+  ```json
+  {
+    "id": "uuid-projet",
+    "idProprietaire": "uuid-user",
+    "titre": "Mon Projet",
+    "description": "Description...",
+    "cheminGit": "Kwilium54/mon-projet",
+    "public": false,
+    "dateCreation": "2026-02-12T...",
+    "dateModification": "2026-02-12T...",
+    "diagrammes": [
+      {
+        "id": "uuid-diag",
+        "titre": "Diagramme 1",
+        "type": "mermaid",
+        ...
+      }
+    ],
+    "collaborations": [
+      {
+        "id": "uuid-collab",
+        "droit": "ecriture",
+        "utilisateur": {
+          "id": "uuid",
+          "nom": "Doe",
+          "prenom": "John",
+          "email": "john@example.com"
+        }
+      }
+    ]
+  }
+  ```
+  
+  ## Permissions :
+  - Accessible si : propriétaire, collaborateur, ou projet public
+  
+  ## Erreurs :
+  - 403 Forbidden : pas d'accès au projet
+  - 404 Not Found : projet introuvable
+}

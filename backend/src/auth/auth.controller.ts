@@ -18,7 +18,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
-  ) {}
+  ) { }
 
   @Get('github')
   @UseGuards(AuthGuard('github'))
@@ -62,7 +62,6 @@ export class AuthController {
       throw new NotFoundException('Utilisateur introuvable');
     }
 
-    const { accessToken, ...safeUser } = user;
-    return safeUser;
+    return user;
   }
 }

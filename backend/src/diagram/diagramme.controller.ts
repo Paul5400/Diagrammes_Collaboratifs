@@ -54,4 +54,28 @@ export class DiagrammeController {
         const githubId = (req as any).user?.sub;
         await this.diagrammeService.delete(id, githubId);
     }
+
+    /**
+     * GET /diagrammes/:id/history
+     * Récupérer l'historique des versions d'un diagramme depuis GitHub
+     */
+    @Get(':id/history')
+    async getHistory(@Req() req: FastifyRequest, @Param('id') id: string) {
+        const githubId = (req as any).user?.sub;
+        return this.diagrammeService.getHistory(id, githubId);
+    }
+
+    /**
+     * GET /diagrammes/:id/version/:sha
+     * Récupérer le contenu d'un diagramme à une version spécifique
+     */
+    @Get(':id/version/:sha')
+    async getVersionAtCommit(
+        @Req() req: FastifyRequest,
+        @Param('id') id: string,
+        @Param('sha') sha: string,
+    ) {
+        const githubId = (req as any).user?.sub;
+        return this.diagrammeService.getVersionAtCommit(id, sha, githubId);
+    }
 }

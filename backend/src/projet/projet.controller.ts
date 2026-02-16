@@ -67,6 +67,16 @@ export class ProjetController {
     await this.projetService.delete(id, githubId);
   }
 
+  /**
+   * POST /projets/:id/save
+   * Sauvegarder tous les diagrammes du projet vers GitHub
+   */
+  @Post(':id/save')
+  async save(@Req() req: FastifyRequest, @Param('id') id: string) {
+    const githubId = (req as any).user?.sub;
+    return this.projetService.saveDiagramsToGithub(id, githubId);
+  }
+
   // ========================================
   // Routes diagrammes imbriquées dans projets
   // ========================================

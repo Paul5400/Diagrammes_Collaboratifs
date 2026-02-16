@@ -1,0 +1,51 @@
+meta {
+  name: Get Diagram Version
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/diagrammes/:id/version/:sha
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: {{diagrammeId}}
+  sha: {{commitSha}}
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  # Récupérer une version spécifique d'un diagramme
+  
+  Récupère le contenu d'un diagramme à une version spécifique (commit SHA).
+  
+  ## Prérequis
+  - Le diagramme doit avoir été sauvegardé au moins une fois
+  - Le SHA doit correspondre à un commit valide dans l'historique
+  
+  ## Réponse
+  ```json
+  {
+    "contenu": "graph TD\n    A[Start] --> B[End]",
+    "sha": "abc123def456...",
+    "titre": "Mon diagramme"
+  }
+  ```
+  
+  ## Utilisation
+  1. Récupérer l'historique avec GET /diagrammes/:id/history
+  2. Choisir un SHA dans la liste
+  3. Récupérer le contenu avec cet endpoint
+  4. (Optionnel) Restaurer cette version en faisant un PATCH /diagrammes/:id avec le contenu
+  
+  ## Codes d'erreur
+  - 401 Unauthorized : Token JWT invalide
+  - 403 Forbidden : Vous n'avez pas accès à ce diagramme
+  - 404 Not Found : Diagramme ou commit introuvable
+  - 400 Bad Request : Diagramme pas encore sauvegardé sur GitHub
+}

@@ -22,9 +22,6 @@ model Utilisateur {
   role            Role     @default(utilisateur)
   dateInscription DateTime @default(now()) @map("date_inscription") @db.Timestamp()
 
-  // Relations
-  collaborations Collaboration[]
-
   @@map("utilisateurs")
 }
 
@@ -85,9 +82,9 @@ model Collaboration {
   dateAjout     DateTime @default(now()) @map("date_ajout") @db.Timestamp()
 
   // Relations
-  utilisateur Utilisateur @relation(fields: [idUtilisateur], references: [id], onDelete: Cascade)
-  projet      Projet?     @relation("ProjetCollaborations", fields: [idProjet], references: [id], onDelete: Cascade)
-  diagramme   Diagramme?  @relation(fields: [idDiagramme], references: [id], onDelete: Cascade)
+  utilisateur GithubUser @relation("GithubUserCollaborations", fields: [idUtilisateur], references: [id], onDelete: Cascade)
+  projet      Projet?    @relation("ProjetCollaborations", fields: [idProjet], references: [id], onDelete: Cascade)
+  diagramme   Diagramme? @relation(fields: [idDiagramme], references: [id], onDelete: Cascade)
 
   @@unique([idUtilisateur, idProjet], name: "unique_utilisateur_projet")
   @@map("collaborations")
@@ -130,8 +127,9 @@ model GithubUser {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp()
 
   // Relations
-  projets      Projet[]     @relation("ProprietaireProjet")
-  diagrammes   Diagramme[]  @relation("ProprietaireDiagramme")
+  projets        Projet[]        @relation("ProprietaireProjet")
+  diagrammes     Diagramme[]     @relation("ProprietaireDiagramme")
+  collaborations Collaboration[] @relation("GithubUserCollaborations")
 
   @@map("github_users")
 }

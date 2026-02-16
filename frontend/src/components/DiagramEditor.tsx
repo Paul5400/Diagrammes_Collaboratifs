@@ -6,10 +6,7 @@ import { EditorHeader } from './EditorHeader';
 import { MermaidPreview } from './MermaidPreview';
 import { CollaborativeEditorRef } from './CollaborativeEditor';
 import { useAuth } from '@/context/AuthContext';
-import { DiagramTemplate } from './DiagramTemplates';
 import { MermaidCode, DiagramId } from '@/types/DiagramTypes';
-import { useSearchParams } from 'next/navigation';
-import { DIAGRAM_TEMPLATES } from './DiagramTemplates';
 import { ExportDiagramDialog } from './ExportDiagramDialog';
 
 
@@ -25,69 +22,42 @@ const CollaborativeEditor = dynamic(
 );
 
 /**
- * CONSTANTE : INITIAL_DIAGRAM_TEMPLATE_CODE
- * Contenu par défaut affiché lors de l'ouverture d'un nouveau diagramme
- * si aucune donnée n'est encore présente dans la session collaborative.
- */
-const INITIAL_DIAGRAM_TEMPLATE_CODE: MermaidCode = "";
-
-/**
- * INTERFACE : DiagramEditorProps
- * Définit la structure des propriétés reçues par le composant racine.
- */
-interface DiagramEditorProps {
-  id: DiagramId;
-}
-
-/**
- * COMPOSANT : DiagramEditor
- * C'est le composant racine de l'espace de travail.
- * Il orchestre la synchronisation entre l'éditeur (texte) et la preview (image).
- */
-
-/**
  * FONCTION UTILITAIRE : Détermine le type de diagramme à partir du code
  */
 const getDiagramTypeFromCode = (code: string): string => {
   const cleanCode = code.trim();
-  // Simple heuristic: check standard Mermaid keywords at start
-  if (cleanCode.startsWith('sequenceDiagram')) return 'Sequence Diagram';
-  if (cleanCode.startsWith('flowchart') || cleanCode.startsWith('graph')) return 'Flowchart';
-  if (cleanCode.startsWith('classDiagram')) return 'Class Diagram';
-  if (cleanCode.startsWith('stateDiagram')) return 'State Diagram';
-  if (cleanCode.startsWith('erDiagram')) return 'ER Diagram';
-  if (cleanCode.startsWith('gantt')) return 'Gantt Chart';
-  if (cleanCode.startsWith('mindmap')) return 'Mindmap';
-  if (cleanCode.startsWith('pie')) return 'Pie Chart';
-  if (cleanCode.startsWith('gitGraph')) return 'Git Graph';
+  if (cleanCode.startsWith('sequenceDiagram')) return 'Diagramme de Séquence';
+  if (cleanCode.startsWith('flowchart') || cleanCode.startsWith('graph')) return 'Organigramme';
+  if (cleanCode.startsWith('classDiagram')) return 'Diagramme de Classes';
+  if (cleanCode.startsWith('stateDiagram')) return 'Diagramme d\'États';
+  if (cleanCode.startsWith('erDiagram')) return 'Diagramme ER';
+  if (cleanCode.startsWith('gantt')) return 'Diagramme de Gantt';
+  if (cleanCode.startsWith('mindmap')) return 'Carte Mentale';
+  if (cleanCode.startsWith('pie')) return 'Diagramme Circulaire';
+  if (cleanCode.startsWith('gitGraph')) return 'Graphe Git';
 
-  return 'Unknown Type';
+  return 'Diagramme';
 };
 
-export function DiagramEditor(diagram: DiagramEditorProps) {
-  const currentDiagramId = diagram.id;
-  const searchParams = useSearchParams();
+/**
+ * INTERFACE : DiagramEditorProps
+ */
+interface DiagramEditorProps {
+  id: DiagramId;
+  projectName?: string;
+  initialCode?: MermaidCode;
+}
 
-  // Récupération des paramètres URL (type et nom)
-  // Note: Dans un vrai cas, on utiliserait ces infos pour créer le diagramme côté backend
-  // ou l'initialiser proprement. Ici on s'en sert pour l'état initial local.
-  const typeParam = searchParams.get('type');
-  const nameParam = searchParams.get('name');
+/**
+ * COMPOSANT : DiagramEditor
+ * Composant racine de l'espace de travail éditeur + preview.
+ */
+export function DiagramEditor({ id, projectName, initialCode }: DiagramEditorProps) {
+  const currentDiagramId = id;
 
-  // Déterminer le code initial en fonction du type demandé dans l'URL
-  const getInitialCode = () => {
-    if (typeParam) {
-      const template = DIAGRAM_TEMPLATES.find(t => t.id === typeParam);
-      if (template) return template.code;
-    }
-    return INITIAL_DIAGRAM_TEMPLATE_CODE;
-  };
-
-  // État principal
   const [mermaidDiagramSourceCode, setMermaidDiagramSourceCode] =
-    useState<MermaidCode>(getInitialCode());
+    useState<MermaidCode>(initialCode || '');
 
-  // Récupération de l'objet d'authentification
   const authenticationContext = useAuth();
   const authenticatedUserInstance = authenticationContext.user;
 
@@ -101,10 +71,8 @@ export function DiagramEditor(diagram: DiagramEditorProps) {
     []
   );
 
-  // Calcul du type actuel pour l'afficher dans le header
   const currentDiagramType = getDiagramTypeFromCode(mermaidDiagramSourceCode);
 
-  // Gestion de l'export
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
 
@@ -116,7 +84,7 @@ export function DiagramEditor(diagram: DiagramEditorProps) {
     <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">
       {/* EN-TÊTE */}
       <EditorHeader
-        projectTitleLabel={nameParam || "System Architecture V2"}
+        projectTitleLabel={projectName || "Diagramme"}
         currentUserData={authenticatedUserInstance}
         diagramType={currentDiagramType}
         onExportClick={() => setIsExportDialogOpen(true)}
@@ -130,7 +98,8 @@ export function DiagramEditor(diagram: DiagramEditorProps) {
             ref={collaborativeMonacoEditorReference}
             sharedDocumentId={currentDiagramId}
             onContentUpdate={handleMonacoContentModification}
-            initialContentValue={getInitialCode()}
+            initialContentValue={initialCode || ''}
+            currentDiagramType={currentDiagramType}
           />
         </section>
 
@@ -148,7 +117,7 @@ export function DiagramEditor(diagram: DiagramEditorProps) {
         onClose={() => setIsExportDialogOpen(false)}
         mermaidCode={mermaidDiagramSourceCode}
         svgContent={currentSvgContent}
-        diagramName={nameParam || "diagram"}
+        diagramName={projectName || "diagram"}
       />
     </div>
   );

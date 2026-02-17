@@ -5,6 +5,7 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useCallback,
   ReactNode,
 } from 'react';
 import Cookies from 'js-cookie';
@@ -18,6 +19,8 @@ export interface User {
   email: string;
   username: string;
   avatarUrl?: string;
+  githubId: string;
+  createdAt: string;
 }
 
 interface AuthContextType {
@@ -35,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     const token = Cookies.get('diagrammer_token');
     if (!token) {
       setUser(null);
@@ -43,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
@@ -66,18 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // useEffect avec tableau vide : s'exécute une seule fois au montage
   useEffect(() => {
     fetchUser();
   }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     Cookies.remove('diagrammer_token');
     setUser(null);
     window.location.href = '/login';
-  };
+  }, []);
 
   return (
     <AuthContext.Provider

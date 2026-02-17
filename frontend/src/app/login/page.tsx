@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Github } from 'lucide-react';
 import Image from 'next/image';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
@@ -12,17 +13,21 @@ const BACKEND_URL =
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLoading(true);
-      Cookies.set('diagrammer_token', token, { expires: 1 });
-      router.push('/dashboard');
-    }
-  }, [router, searchParams]);
+    const handleNavigation = async () => {
+      const token = searchParams.get('token');
+      if (token) {
+        setLoading(true);
+        Cookies.set('diagrammer_token', token, { expires: 1 });
+        await refreshUser();
+        router.push('/dashboard');
+      }
+    };
+    handleNavigation();
+  }, [router, searchParams, refreshUser]);
 
   const handleLogin = () => {
     window.location.href = `${BACKEND_URL}/auth/github`;

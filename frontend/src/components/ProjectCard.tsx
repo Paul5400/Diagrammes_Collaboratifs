@@ -48,8 +48,10 @@ export function ProjectCard({ id, title, description, diagramCount, dateModifica
           <div className="font-medium text-sm mb-1 text-zinc-100 group-hover:text-white transition-colors">
             {title}
           </div>
-          {description && (
+          {description ? (
             <div className="text-xs text-zinc-500 mb-2 line-clamp-1">{description}</div>
+          ) : (
+            <div className="text-xs text-zinc-500 mb-2 line-clamp-1">Aucune description</div>
           )}
           <div className="text-xs text-zinc-600">
             {formatRelativeDate(dateModification)}

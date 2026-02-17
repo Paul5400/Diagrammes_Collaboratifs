@@ -1,44 +1,136 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { Logo } from '../components/Logo';
+import { Layers, Shield, Zap, Users2, Github, Check, ArrowRight, Menu, X, LayoutDashboard } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
-    <div
-      className="min-h-screen flex flex-col font-sans antialiased"
-      style={{
-        backgroundColor: 'var(--bg-page)',
-        color: 'var(--text-primary)',
-      }}
-    >
-      <div className="w-full max-w-[1200px] mx-auto p-8 flex-1">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] font-sans antialiased selection:bg-[var(--accent-primary)] selection:text-white">
+      {/* Dynamic Background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--accent-primary)] opacity-5 blur-[120px] rounded-full animate-pulse"></div>
+        <div className="absolute bottom-[20%] right-[-5%] w-[30%] h-[30%] bg-[#3b82f6] opacity-5 blur-[100px] rounded-full animate-pulse [animation-delay:2s]"></div>
+      </div>
+
+      <div className="w-full max-w-[1200px] mx-auto px-6 md:px-8">
         {/* Navigation */}
-        <nav className="flex justify-between items-center pb-16">
+        <nav className="flex justify-between items-center py-6 md:py-8 mb-8 border-b border-white/[0.03] relative z-20">
           <Logo size="md" />
-          <div className="flex items-center gap-4">
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-8">
             <Link
-              href="#"
-              className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+              href="#features"
+              className="text-sm font-medium transition-all duration-200 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             >
               Fonctionnalités
             </Link>
             <Link
-              href="#"
-              className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+              href="#pricing"
+              className="text-sm font-medium transition-all duration-200 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             >
               Tarifs
             </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-transparent bg-[var(--accent-primary)] text-white shadow-[0_0_10px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-px"
-            >
-              Sign up
-            </Link>
+            {loading ? (
+              <div className="w-24 h-9 bg-white/5 animate-pulse rounded-md"></div>
+            ) : user ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-white text-black hover:bg-zinc-200 transition-all active:scale-95"
+              >
+                <LayoutDashboard size={16} />
+                Dashboard
+              </Link>
+            ) : (
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-transparent bg-[var(--accent-primary)] text-white shadow-[0_0_10px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-px"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            className="md:hidden p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          {/* Mobile Backdrop */}
+          {isMobileMenuOpen && (
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-10 md:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            ></div>
+          )}
+
+          {/* Mobile Menu Navigation */}
+          <div className={`
+            fixed top-20 left-6 right-6 p-6 rounded-2xl bg-[#0f0f11] border border-white/10 shadow-2xl z-20 md:hidden
+            transition-all duration-300 ease-out transform
+            ${isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}
+          `}>
+            <div className="flex flex-col gap-5">
+              <Link
+                href="#features"
+                className="text-lg font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Fonctionnalités
+              </Link>
+              <Link
+                href="#pricing"
+                className="text-lg font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Tarifs
+              </Link>
+              <div className="h-px bg-white/5 my-2"></div>
+              {user ? (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center justify-center gap-2 px-5 py-4 rounded-xl text-base font-semibold bg-white text-black"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <LayoutDashboard size={18} />
+                  Aller au Dashboard
+                </Link>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center px-5 py-4 rounded-xl text-base font-medium border border-[var(--border-subtle)]"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Se connecter
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="flex items-center justify-center px-5 py-4 rounded-xl text-base font-semibold bg-[var(--accent-primary)] text-white"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    S'inscrire
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </nav>
 
@@ -84,29 +176,29 @@ export default function Home() {
               GitHub
             </span>
           </div>
-          <h1 className="text-5xl font-semibold tracking-tighter mb-4 bg-gradient-to-r from-white to-[#888] bg-clip-text text-transparent">
+          <h1 className="text-3xl font-semibold tracking-tighter mb-4 bg-gradient-to-r from-white to-[#888] bg-clip-text text-transparent md:text-5xl text-center">
             Visualisez vos idées à
             <br />
             la vitesse de la pensée.
           </h1>
-          <p className="text-lg mb-6 leading-relaxed text-[var(--text-secondary)]">
+          <p className="text-sm mb-6 leading-relaxed text-[var(--text-secondary)] md:text-lg">
             Collaborez en temps réels sur vos diagrammes
             <br />
-            directement liés à votre projets sur GitHub.
+            directement liés à votre projet sur GitHub.
           </p>
 
           <div className="flex justify-center gap-4 mt-8">
             <Link
               href="/dashboard"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-md text-base font-medium transition-all duration-200 border border-transparent bg-[var(--accent-primary)] text-white shadow-[0_0_10px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-px"
+              className="text-sm md:text-base inline-flex items-center justify-center px-6 py-3 rounded-md text-base font-medium transition-all duration-200 border border-transparent bg-[var(--accent-primary)] text-white shadow-[0_0_10px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-px"
             >
               Créer un diagramme
             </Link>
             <Link
-              href="#"
-              className="inline-flex items-center justify-center px-6 py-3 rounded-md text-base font-medium transition-all duration-200 border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+              href="#features"
+              className="text-sm md:text-base inline-flex items-center justify-center px-6 py-3 rounded-md text-base font-medium transition-all duration-200 border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
             >
-              Documentation
+              Voir les fonctionnalités
             </Link>
           </div>
 
@@ -119,7 +211,143 @@ export default function Home() {
             />
           </div>
         </section>
+
+
+        {/* Sections Fonctionnalités et Tarifs */}
+        <section id="features" className="py-24 border-b border-[var(--border-subtle)] scroll-mt-20">
+          <h2 className="text-3xl font-bold text-center mb-16">Pourquoi choisir Diagrammer ?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center mb-6 text-zinc-400">
+                <Users2 size={24} />
+              </div>
+              <h3 className="text-xl font-bold mb-4">Collaboration Réelle</h3>
+              <p className="text-[var(--text-secondary)]">Éditez vos diagrammes à plusieurs en temps réel avec des curseurs visibles et une synchronisation instantanée.</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center mb-6 text-zinc-400">
+                <Github size={24} />
+              </div>
+              <h3 className="text-xl font-bold mb-4">Flux Git Direct</h3>
+              <p className="text-[var(--text-secondary)]">Sauvegardez vos diagrammes Mermaid directement dans vos repositories GitHub comme du code source.</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center mb-6 text-zinc-400">
+                <Zap size={24} />
+              </div>
+              <h3 className="text-xl font-bold mb-4">Performance</h3>
+              <p className="text-[var(--text-secondary)]">Un éditeur léger et performant, conçu pour la productivité maximale des développeurs.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="py-24 scroll-mt-20">
+          <h2 className="text-3xl font-bold text-center mb-16">Des tarifs simples et transparents</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="p-8 rounded-2xl border border-[var(--border-subtle)] bg-white/[0.02]">
+              <h3 className="text-xl font-bold mb-2">Gratuit</h3>
+              <div className="text-4xl font-bold mb-6">0€ <span className="text-lg font-normal text-zinc-500">/ mois</span></div>
+              <ul className="space-y-4 mb-8">
+                {['5 projets GitHub', 'Historique 7 jours', 'Exports SVG/PNG'].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-[var(--text-secondary)] text-sm">
+                    <Check size={16} className="text-[var(--accent-primary)]" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/dashboard" className="block w-full text-center py-3 rounded-md bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                Commencer
+              </Link>
+            </div>
+            <div className="p-8 rounded-2xl border border-[var(--accent-primary)]/50 bg-[var(--accent-primary)]/[0.03] shadow-[0_0_30px_rgba(124,58,237,0.1)]">
+              <h3 className="text-xl font-bold mb-2">Pro</h3>
+              <div className="text-4xl font-bold mb-6">12€ <span className="text-lg font-normal text-zinc-500">/ mois</span></div>
+              <ul className="space-y-4 mb-8">
+                {['Projets illimités', 'Historique complet', 'Support prioritaire'].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-white text-sm">
+                    <Check size={16} className="text-[var(--accent-primary)]" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                disabled
+                className="block w-full text-center py-3 rounded-md bg-white/5 border border-white/5 text-zinc-500 cursor-not-allowed transition-colors font-medium"
+              >
+                Bientôt disponible
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-12 border-t border-white/[0.03] flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <Logo size="sm" />
+            <span className="text-[10px] text-zinc-600 font-medium">© 2026 Diagrammer.</span>
+          </div>
+          <div className="flex items-center gap-8">
+            <Link href="#" className="text-xs text-zinc-500 hover:text-white transition-colors">Twitter</Link>
+            <Link href="#" className="text-xs text-zinc-500 hover:text-white transition-colors">GitHub</Link>
+            <Link href="#" className="text-xs text-zinc-500 hover:text-white transition-colors">Terms</Link>
+            <Link href="#" className="text-xs text-zinc-500 hover:text-white transition-colors">Privacy</Link>
+          </div>
+        </footer>
       </div>
+
+      <style jsx global>{`
+        @keyframes typing {
+          0%, 10% { width: 0; }
+          40%, 60% { width: 100%; }
+          90%, 100% { width: 0; }
+        }
+        .animate-typing {
+          display: inline-block;
+          overflow: hidden;
+          white-space: nowrap;
+          width: 0;
+          animation: typing 6s steps(20, end) infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+        .animate-cursor-blink { animation: blink 0.8s infinite; }
+
+        @keyframes drawPath { to { stroke-dashoffset: 0; } }
+        .draw-path-1 { animation: drawPath 0.8s ease-out 0.5s forwards infinite; }
+        .draw-path-2 { animation: drawPath 0.8s ease-out 1.2s forwards infinite; }
+        .draw-path-3 { animation: drawPath 0.8s ease-out 2s forwards infinite; }
+        .draw-path-4 { animation: drawPath 0.8s ease-out 2.8s forwards infinite; }
+
+        @keyframes fadeInOut {
+          0%, 10%, 100% { opacity: 0; transform: translateY(5px); }
+          20%, 80% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-1 { animation: fadeInOut 6s ease-out 0.5s infinite; }
+        .animate-fade-in-2 { animation: fadeInOut 6s ease-out 1.2s infinite; }
+        .animate-fade-in-3 { animation: fadeInOut 6s ease-out 2s infinite; }
+        .animate-fade-in-4 { animation: fadeInOut 6s ease-out 2.8s infinite; }
+
+        @keyframes svgZoom {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        .animate-svg-zoom {
+          animation: svgZoom 12s ease-in-out infinite;
+        }
+
+        @keyframes premiumCursor1 {
+          0%, 100% { transform: translate(120px, 140px); }
+          50% { transform: translate(250px, 180px); }
+        }
+        @keyframes premiumCursor2 {
+          0%, 100% { transform: translate(320px, 90px); }
+          50% { transform: translate(200px, 240px); }
+        }
+        .cursor-premium-1 { animation: premiumCursor1 10s infinite ease-in-out; }
+        .cursor-premium-2 { animation: premiumCursor2 12s infinite ease-in-out; }
+
+        html {
+          scroll-behavior: smooth;
+        }
+      `}</style>
     </div>
   );
 }

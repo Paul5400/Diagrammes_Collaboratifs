@@ -106,10 +106,61 @@ export const CollaborativeEditor = forwardRef<
       editorInstance.updateOptions(monacoOptions);
 
       // 1. Enregistrement du nouveau langage 'mermaid' dans Monaco
-      // ... (code existant)
       monacoInstance.languages.register({ id: 'mermaid' });
 
-      // ... (Completion provider)
+      // Définition d'un thème personnalisé pour faciliter l'édition de fichiers
+      monacoInstance.editor.defineTheme('mermaid-dark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: 'keyword.diagram', foreground: 'C586C0', fontStyle: 'bold' }, // Violet (Types de diagrammes)
+          { token: 'keyword.control', foreground: 'D87093', fontStyle: 'bold' }, // Rose (loop, alt, end, subgraph)
+          { token: 'keyword.command', foreground: '569CD6' },                   // Bleu (Commandes générales)
+          { token: 'type.keyword', foreground: '4EC9B0', fontStyle: 'italic' }, // Turquoise (participant, actor, class)
+          { token: 'type.marker', foreground: '4EC9B0' },                      // Turquoise (<<interface>>)
+          { token: 'operator.arrow', foreground: 'FFD700', fontStyle: 'bold' }, // Or (Flèches)
+          { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },      // Vert (Commentaires)
+          { token: 'string', foreground: 'CE9178' },                            // Orange (Textes)
+          { token: 'number', foreground: 'B5CEA8' },                            // Vert clair (Chiffres)
+          { token: 'variable', foreground: '9CDCFE' },                          // Bleu ciel (Identifiants)
+          { token: 'operator.separator', foreground: 'D4D4D4' },                // Gris clair
+          { token: 'bracket', foreground: 'FFD700' },                           // Or
+        ],
+        colors: {
+          'editor.background': '#0c0c0e',
+          'editorLineNumber.foreground': '#3b3b3f',
+        }
+      });
+
+      // Configuration du tokenizer pour la coloration syntaxique
+      monacoInstance.languages.setMonarchTokensProvider('mermaid', {
+        keywords: MERMAID_KEYWORDS,
+        diagramTypes: ['sequenceDiagram', 'flowchart', 'graph', 'classDiagram', 'stateDiagram-v2', 'gantt', 'pie', 'erDiagram', 'journey', 'gitGraph', 'mindmap', 'timeline'],
+        controlKeywords: ['loop', 'alt', 'else', 'opt', 'end', 'rect', 'subgraph', 'critical', 'option', 'break', 'try', 'catch', 'finally'],
+        typeKeywords: ['participant', 'actor', 'class', 'interface', 'entity', 'enum', 'struct'],
+        tokenizer: {
+          root: [
+            [/[a-zA-Z_$][\w$]*/, {
+              cases: {
+                '@diagramTypes': 'keyword.diagram',
+                '@controlKeywords': 'keyword.control',
+                '@typeKeywords': 'type.keyword',
+                '@keywords': 'keyword.command',
+                '@default': 'variable'
+              }
+            }],
+            [/%%.*$/, 'comment'],
+            [/<<[^>]+>>/, 'type.marker'],
+            [/[{}()\[\]]/, 'bracket'],
+            [/->>?|-->>?|==>?|<-?|<--?|x-?|x--?|\*-?|\*--?/, 'operator.arrow'],
+            [/:|\||~/, 'operator.separator'],
+            [/"[^"]*"/, 'string'],
+            [/\d+/, 'number'],
+          ]
+        }
+      });
+
+      // 2. Completion provider
       monacoInstance.languages.registerCompletionItemProvider('mermaid', {
         provideCompletionItems: (model, position) => {
           const suggestions = MERMAID_KEYWORDS.map((keyword) => ({
@@ -159,7 +210,7 @@ export const CollaborativeEditor = forwardRef<
         <Editor
           height="100%"
           defaultLanguage="mermaid"
-          theme="vs-dark"
+          theme="mermaid-dark"
           onMount={initializeMonacoEditor}
           options={MONACO_EDITOR_CONFIGURATION_OPTIONS}
         />

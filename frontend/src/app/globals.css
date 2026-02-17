@@ -23,8 +23,7 @@
 
 html,
 body {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 @theme inline {
@@ -48,39 +47,6 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-}
-
-/* Utilities */
-.hidden {
-  display: none !important;
-}
-
-.flex {
-  display: flex;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.gap-sm {
-  gap: var(--space-sm);
-}
-
-.gap-md {
-  gap: var(--space-md);
-}
-
-.text-center {
-  text-align: center;
 }
 
 /* Buttons */
@@ -195,6 +161,7 @@ body {
   margin-bottom: var(--space-md);
   background: linear-gradient(to right, #fff, #888);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

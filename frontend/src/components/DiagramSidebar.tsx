@@ -28,17 +28,6 @@ const TYPE_ICONS: Record<string, string> = {
     autre: '📄',
 };
 
-const TYPE_EXTENSIONS: Record<string, string> = {
-    sequence: '.seq',
-    flux: '.flow',
-    classe: '.class',
-    uml: '.uml',
-    activite: '.act',
-    mermaid: '.mmd',
-    plantuml: '.puml',
-    autre: '.txt',
-};
-
 export function DiagramSidebar({ diagrammes, selectedId, onSelect, onDelete, onCreateClick }: DiagramSidebarProps) {
     return (
         <div className="w-64 min-w-[220px] h-full bg-[#0c0c0e] border-r border-[var(--border-subtle)] flex flex-col">
@@ -79,7 +68,7 @@ export function DiagramSidebar({ diagrammes, selectedId, onSelect, onDelete, onC
                             </span>
                             <span className="truncate flex-1">
                                 {diag.titre}
-                                <span className="text-zinc-600">{TYPE_EXTENSIONS[diag.type] || '.mmd'}</span>
+                                <span className="text-zinc-600">{'.mmd'}</span>
                             </span>
                         </button>
 

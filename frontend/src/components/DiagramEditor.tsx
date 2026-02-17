@@ -46,17 +46,14 @@ interface DiagramEditorProps {
   id: DiagramId;
   projectName?: string;
   initialCode?: MermaidCode;
+  isReadOnly?: boolean;
 }
 
 /**
  * COMPOSANT : DiagramEditor
  * Composant racine de l'espace de travail éditeur + preview.
  */
-export function DiagramEditor({ id, projectName, initialCode }: DiagramEditorProps) {
-  const currentDiagramId = id;
-
-  const [mermaidDiagramSourceCode, setMermaidDiagramSourceCode] =
-    useState<MermaidCode>(initialCode || '');
+export function DiagramEditor({ id, projectName, initialCode, isReadOnly = false }: DiagramEditorProps) {
 
   const authenticationContext = useAuth();
   const authenticatedUserInstance = authenticationContext.user;
@@ -100,6 +97,7 @@ export function DiagramEditor({ id, projectName, initialCode }: DiagramEditorPro
             onContentUpdate={handleMonacoContentModification}
             initialContentValue={initialCode || ''}
             currentDiagramType={currentDiagramType}
+            isReadOnly={isReadOnly}
           />
         </section>
 

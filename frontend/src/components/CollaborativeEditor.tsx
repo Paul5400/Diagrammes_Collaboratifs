@@ -26,6 +26,7 @@ interface CollaborativeEditorProps {
   onContentUpdate: (updatedContent: MermaidCode | undefined) => void;
   initialContentValue?: MermaidCode;
   currentDiagramType?: string;
+  isReadOnly?: boolean;
 }
 
 /**
@@ -51,6 +52,7 @@ export const CollaborativeEditor = forwardRef<
   const currentSharedDocumentId = props.sharedDocumentId;
   const onContentUpdateCallback = props.onContentUpdate;
   const initialContentFallbackValue = props.initialContentValue || '';
+  const isReadOnlyMode = props.isReadOnly || false;
 
   // Instances locales de Monaco (L'éditeur et la bibliothèque)
   const [monacoEditorInstance, setMonacoEditorInstance] =
@@ -92,8 +94,16 @@ export const CollaborativeEditor = forwardRef<
   const initializeMonacoEditor = useCallback(
     (editorInstance: editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
       console.log(`[CollaborativeEditor] Montage de l'éditeur pour ${currentSharedDocumentId}`);
+      const monacoOptions: editor.IStandaloneEditorConstructionOptions = {
+        ...MONACO_EDITOR_CONFIGURATION_OPTIONS,
+        readOnly: isReadOnlyMode, // Applique le mode lecture seule si nécessaire
+      }; 
+
       setMonacoEditorInstance(editorInstance);
       setMonacoLibraryLibraryInstance(monacoInstance);
+      
+      // Applique les options immédiatement au chargement
+      editorInstance.updateOptions(monacoOptions);
 
       // 1. Enregistrement du nouveau langage 'mermaid' dans Monaco
       // ... (code existant)
@@ -124,8 +134,14 @@ export const CollaborativeEditor = forwardRef<
         console.log(`[CollaborativeEditor] Changement détecté dans l'éditeur (${val.length} chars)`);
         onContentUpdateCallback(val);
       });
+
+      // 4. Configuration finale incluant le mode lecture seule
+      editorInstance.updateOptions({
+        ...MONACO_EDITOR_CONFIGURATION_OPTIONS,
+        readOnly: isReadOnlyMode,
+      });
     },
-    [onContentUpdateCallback, currentSharedDocumentId]
+    [onContentUpdateCallback, currentSharedDocumentId, isReadOnlyMode]
   );
 
   return (

@@ -24,6 +24,56 @@ export function EditorHeader(props: EditorHeaderProps) {
   const authenticatedUserInformation = props.currentUserData;
   const customComponentClassName = props.className || '';
   const currentDiagramType = props.diagramType;
+  
+  const [hasCopiedLink, setHasCopiedLink] = React.useState(false);
+
+  const handleShareClick = () => {
+    // Si on est en mode "view" (lecture seule), le lien actuel est déjà le bon
+    // Sinon, on génère le lien de collaboration standard
+    if (typeof window !== 'undefined') {
+      const currentUrl = window.location.href;
+      
+      // Si l'URL contient déjà '/view', on copie tel quel (c'est déjà un lien lecture seule)
+      if (currentUrl.includes('/view')) {
+        navigator.clipboard.writeText(currentUrl)
+          .then(() => {
+            setHasCopiedLink(true);
+            setTimeout(() => setHasCopiedLink(false), 2000);
+          });
+        return;
+      }
+
+      // Sinon, on crée le lien de lecture seule en ajoutant '/view'
+      const baseUrl = currentUrl.endsWith('/') ? currentUrl.slice(0, -1) : currentUrl;
+      const readOnlyUrl = `${baseUrl}/view`;
+      
+      // Solution de repli pour HTTP non sécurisé (ou navigateurs anciens)
+      // Car navigator.clipboard.writeText exige un contexte sécurisé (HTTPS ou localhost)
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(readOnlyUrl)
+          .then(() => {
+            setHasCopiedLink(true);
+            setTimeout(() => setHasCopiedLink(false), 2000);
+          })
+          .catch(err => console.error('Erreur copie clipboard:', err));
+      } else {
+        // Fallback deprecated mais fonctionnel pour HTTP local
+        const textArea = document.createElement("textarea");
+        textArea.value = readOnlyUrl;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setHasCopiedLink(true);
+          setTimeout(() => setHasCopiedLink(false), 2000);
+        } catch (err) {
+          console.error('Erreur fallback copie:', err);
+        }
+        document.body.removeChild(textArea);
+      }
+    }
+  };
 
 
   return (
@@ -65,9 +115,20 @@ export function EditorHeader(props: EditorHeaderProps) {
           </div>
         </div>
 
-        <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--accent-primary)] text-white text-xs font-medium hover:bg-[var(--accent-hover)] transition-all shadow-[0_0_15px_var(--accent-glow)]">
-          <Share2 size={14} />
-          Partager
+        <button 
+          onClick={handleShareClick}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--accent-primary)] text-white text-xs font-medium hover:bg-[var(--accent-hover)] transition-all shadow-[0_0_15px_var(--accent-glow)] relative overflow-hidden"
+        >
+          {hasCopiedLink ? (
+             <>
+               <span className="animate-pulse">Lien copié !</span>
+             </>
+          ) : (
+            <>
+              <Share2 size={14} />
+              Partager (Lecture seule)
+            </>
+          )}
         </button>
 
         <button

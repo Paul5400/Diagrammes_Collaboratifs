@@ -88,11 +88,15 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             );
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    router.push('/login');
+                    return;
+                }
                 if (response.status === 404 || response.status === 403) {
                     router.push('/dashboard');
                     return;
                 }
-                throw new Error('Failed to fetch project');
+                throw new Error(`Failed to fetch project: ${response.status}`);
             }
 
             const data: ProjetData = await response.json();
@@ -142,6 +146,46 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         setMermaidCode(content || '');
     }, []);
 
+    const handleDeleteDiagram = async (diagrammeId: string, e: React.MouseEvent) => {
+        console.log(`[handleDeleteDiagram] Requested for: ${diagrammeId}`);
+        e.stopPropagation();
+        if (!confirm('Êtes-vous sûr de vouloir supprimer ce diagramme ?')) return;
+
+        const token = Cookies.get('diagrammer_token');
+        try {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/diagrammes/${diagrammeId}`,
+                {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            console.log(`[handleDeleteDiagram] Response Status: ${response.status}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error(`[handleDeleteDiagram] Error Data:`, errorData);
+                throw new Error('Failed to delete diagram');
+            }
+
+            setProjet((prev) => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    diagrammes: prev.diagrammes.filter((d) => d.id !== diagrammeId),
+                };
+            });
+
+            if (selectedDiagramId === diagrammeId) {
+                setSelectedDiagramId(null);
+                setMermaidCode('');
+            }
+        } catch (error) {
+            console.error('Error deleting diagram:', error);
+            alert('Erreur lors de la suppression');
+        }
+    };
+
     const handleMermaidRender = useCallback((svg: string) => {
         setCurrentSvgContent(svg);
     }, []);
@@ -175,6 +219,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                     diagrammes={projet.diagrammes}
                     selectedId={selectedDiagramId}
                     onSelect={handleSelectDiagram}
+                    onDelete={handleDeleteDiagram}
                     onCreateClick={() => setIsCreateDialogOpen(true)}
                 />
 
@@ -184,6 +229,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                         {/* Editor Panel */}
                         <section className="w-[45%] h-full flex flex-col border-r border-[var(--border-subtle)]">
                             <CollaborativeEditor
+                                key={selectedDiagram.id}
                                 ref={collaborativeEditorRef}
                                 sharedDocumentId={selectedDiagram.id}
                                 onContentUpdate={handleContentUpdate}

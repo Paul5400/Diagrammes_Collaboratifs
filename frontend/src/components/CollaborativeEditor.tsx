@@ -91,14 +91,15 @@ export const CollaborativeEditor = forwardRef<
    */
   const initializeMonacoEditor = useCallback(
     (editorInstance: editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
+      console.log(`[CollaborativeEditor] Montage de l'éditeur pour ${currentSharedDocumentId}`);
       setMonacoEditorInstance(editorInstance);
       setMonacoLibraryLibraryInstance(monacoInstance);
 
       // 1. Enregistrement du nouveau langage 'mermaid' dans Monaco
+      // ... (code existant)
       monacoInstance.languages.register({ id: 'mermaid' });
 
-      // III Autocomplétion
-      // 2. Configuration du "Completion Provider" pour l'autocomplétion
+      // ... (Completion provider)
       monacoInstance.languages.registerCompletionItemProvider('mermaid', {
         provideCompletionItems: (model, position) => {
           const suggestions = MERMAID_KEYWORDS.map((keyword) => ({
@@ -119,10 +120,12 @@ export const CollaborativeEditor = forwardRef<
       // 3. Écouteur de changements : on prévient le parent (DiagramEditor)
       // nécessaire pour mettre à jour la prévisualisation SVG.
       editorInstance.onDidChangeModelContent(() => {
-        onContentUpdateCallback(editorInstance.getValue());
+        const val = editorInstance.getValue();
+        console.log(`[CollaborativeEditor] Changement détecté dans l'éditeur (${val.length} chars)`);
+        onContentUpdateCallback(val);
       });
     },
-    [onContentUpdateCallback]
+    [onContentUpdateCallback, currentSharedDocumentId]
   );
 
   return (

@@ -52,6 +52,7 @@ export class DiagrammeController {
     @HttpCode(HttpStatus.NO_CONTENT)
     async delete(@Req() req: FastifyRequest, @Param('id') id: string) {
         const githubId = (req as any).user?.sub;
+        console.log(`[DiagrammeController] DELETE request for diagram ${id} from user ${githubId}`);
         await this.diagrammeService.delete(id, githubId);
     }
 

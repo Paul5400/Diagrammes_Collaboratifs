@@ -58,14 +58,14 @@ export class DiagrammeService {
             throw new BadRequestException('Le titre est obligatoire');
         }
 
-        const { githubUser } = await this.verifyProjetAccess(projetId, githubId);
+        const { projet } = await this.verifyProjetAccess(projetId, githubId);
 
         const diagramme = await this.prisma.diagramme.create({
             data: {
                 titre: dto.titre.trim(),
                 type: dto.type,
                 contenu: dto.contenu || null,
-                idProprietaire: githubUser.id,
+                idProprietaire: projet.idProprietaire,
                 idProjet: projetId,
             },
         });
@@ -170,9 +170,11 @@ export class DiagrammeService {
         }
 
         if (diagramme.projet?.idProprietaire !== githubUser.id) {
+            console.warn(`[DiagrammeService] Forbidden: User ${githubUser.id} tried to delete diagram ${diagrammeId} owned by ${diagramme.projet?.idProprietaire}`);
             throw new ForbiddenException("Vous n'avez pas le droit de supprimer ce diagramme");
         }
 
+        console.log(`[DiagrammeService] Deleting diagram ${diagrammeId} from DB`);
         await this.prisma.diagramme.delete({
             where: { id: diagrammeId },
         });

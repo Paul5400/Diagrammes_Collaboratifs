@@ -82,6 +82,9 @@ export default function DashboardPage() {
         if (response.ok) {
           const data = await response.json();
           setProjects(data);
+        } else if (response.status === 401) {
+          Cookies.remove('diagrammer_token');
+          router.push('/login');
         }
       } catch (error) {
         console.error('Error fetching projects:', error);

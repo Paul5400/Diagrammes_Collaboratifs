@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, Trash2 } from 'lucide-react';
 
 interface DiagrammeItem {
     id: string;
@@ -13,6 +13,7 @@ interface DiagramSidebarProps {
     diagrammes: DiagrammeItem[];
     selectedId: string | null;
     onSelect: (id: string) => void;
+    onDelete: (id: string, e: React.MouseEvent) => void;
     onCreateClick: () => void;
 }
 
@@ -38,7 +39,7 @@ const TYPE_EXTENSIONS: Record<string, string> = {
     autre: '.txt',
 };
 
-export function DiagramSidebar({ diagrammes, selectedId, onSelect, onCreateClick }: DiagramSidebarProps) {
+export function DiagramSidebar({ diagrammes, selectedId, onSelect, onDelete, onCreateClick }: DiagramSidebarProps) {
     return (
         <div className="w-64 min-w-[220px] h-full bg-[#0c0c0e] border-r border-[var(--border-subtle)] flex flex-col">
             {/* Header */}
@@ -65,19 +66,31 @@ export function DiagramSidebar({ diagrammes, selectedId, onSelect, onCreateClick
                 )}
 
                 {diagrammes.map((diag) => (
-                    <button
-                        key={diag.id}
-                        onClick={() => onSelect(diag.id)}
-                        className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-all ${selectedId === diag.id
-                            ? 'bg-[var(--accent-primary)]/10 text-white border-l-2 border-[var(--accent-primary)]'
-                            : 'text-zinc-400 hover:bg-[var(--bg-hover)] hover:text-zinc-200 border-l-2 border-transparent'
-                            }`}
-                    >
-                        <span className="text-sm flex-shrink-0">
-                            {TYPE_ICONS[diag.type] || '📄'}
-                        </span>
-                        <span className="truncate">{diag.titre}<span className="text-zinc-600">{TYPE_EXTENSIONS[diag.type] || '.mmd'}</span></span>
-                    </button>
+                    <div key={diag.id} className="group relative">
+                        <button
+                            onClick={() => onSelect(diag.id)}
+                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-all ${selectedId === diag.id
+                                ? 'bg-[var(--accent-primary)]/10 text-white border-l-2 border-[var(--accent-primary)]'
+                                : 'text-zinc-400 hover:bg-[var(--bg-hover)] hover:text-zinc-200 border-l-2 border-transparent'
+                                }`}
+                        >
+                            <span className="text-sm flex-shrink-0">
+                                {TYPE_ICONS[diag.type] || '📄'}
+                            </span>
+                            <span className="truncate flex-1">
+                                {diag.titre}
+                                <span className="text-zinc-600">{TYPE_EXTENSIONS[diag.type] || '.mmd'}</span>
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={(e) => onDelete(diag.id, e)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition-all"
+                            title="Supprimer le diagramme"
+                        >
+                            <Trash2 size={12} />
+                        </button>
+                    </div>
                 ))}
             </div>
         </div>

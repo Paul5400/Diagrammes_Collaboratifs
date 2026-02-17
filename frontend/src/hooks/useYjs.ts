@@ -17,7 +17,7 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
     const providerRef = useRef<HocuspocusProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
     const ydocRef = useRef<Y.Doc | null>(null);
-    
+
     const [ytext, setYtext] = useState<Y.Text | null>(null);
     const [isSynced, setIsSynced] = useState(false);
 
@@ -28,7 +28,7 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
         // Y.Doc : Structure CRDT pour synchronisation sans conflits
         const ydoc = new Y.Doc();
         ydocRef.current = ydoc;
-        
+
         // Provider WebSocket : Synchronise automatiquement le document Yjs avec le serveur
         const provider = new HocuspocusProvider({
             url: APP_CONFIG.WEBSOCKET_URL,
@@ -56,6 +56,7 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
                 }
 
                 // MonacoBinding : Lie Yjs ↔ Monaco, toute modification est propagée automatiquement
+                console.log(`[useYjs] Création du MonacoBinding pour ${id}. Type length: ${type.length}`);
                 const binding = new MonacoBinding(
                     type,
                     model,
@@ -63,8 +64,18 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
                     provider.awareness // Partage les curseurs entre utilisateurs
                 );
 
+                // Initialisation avec le contenu par défaut si le document est vide
+                if (type.length === 0 && defaultValue) {
+                    console.log(`[useYjs] Document vide détecté, insertion du defaultValue de longueur ${defaultValue.length}`);
+                    ydoc.transact(() => {
+                        type.insert(0, defaultValue);
+                    });
+                } else if (type.length > 0) {
+                    console.log(`[useYjs] Le document a déjà du contenu (${type.length} chars)`);
+                }
+
                 bindingRef.current = binding;
-                console.log('MonacoBinding créé');
+                console.log('[useYjs] MonacoBinding créé');
             }
         };
 

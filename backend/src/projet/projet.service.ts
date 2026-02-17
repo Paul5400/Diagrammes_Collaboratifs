@@ -19,7 +19,7 @@ export class ProjetService {
     private readonly prisma: PrismaService,
     private readonly gitService: GitService,
     private readonly userService: UserService,
-  ) {}
+  ) { }
 
   /**
    * Créer un nouveau projet avec un dépôt GitHub
@@ -40,7 +40,7 @@ export class ProjetService {
     }
 
     const repoName = this.gitService.slugify(dto.titre);
-    
+
     try {
       const { owner, repo, url } = await this.gitService.createRepository(
         accessToken,
@@ -207,7 +207,7 @@ export class ProjetService {
 
     const projet = await this.prisma.projet.findUnique({
       where: { id: projetId },
-      include: { 
+      include: {
         diagrammes: true,
         collaborations: true,
       },
@@ -220,8 +220,8 @@ export class ProjetService {
     // Vérifier si l'utilisateur est propriétaire OU collaborateur avec droit d'écriture
     const isOwner = projet.idProprietaire === githubUser.id;
     const hasWriteAccess = projet.collaborations.some(
-      (collab) => 
-        collab.idUtilisateur === githubUser.id && 
+      (collab) =>
+        collab.idUtilisateur === githubUser.id &&
         collab.droit === 'ecriture'
     );
 

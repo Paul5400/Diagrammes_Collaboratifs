@@ -46,7 +46,10 @@ export function CreateProjectDialog({ isOpen, onClose }: CreateProjectDialogProp
 
             if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.message || 'Erreur lors de la création du projet');
+                const errorMessage = Array.isArray(data.message)
+                    ? data.message.join(', ')
+                    : (typeof data.message === 'string' ? data.message : 'Erreur lors de la création du projet');
+                throw new Error(errorMessage);
             }
 
             const projet = await response.json();
@@ -123,8 +126,8 @@ export function CreateProjectDialog({ isOpen, onClose }: CreateProjectDialogProp
                             <button
                                 onClick={() => setIsPublic(false)}
                                 className={`flex-1 flex items-center gap-3 p-3 rounded-lg border transition-all ${!isPublic
-                                        ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 text-white'
-                                        : 'border-[var(--border-subtle)] bg-[#1a1a1d] text-zinc-400 hover:border-zinc-600'
+                                    ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 text-white'
+                                    : 'border-[var(--border-subtle)] bg-[#1a1a1d] text-zinc-400 hover:border-zinc-600'
                                     }`}
                             >
                                 <Lock size={16} />
@@ -136,8 +139,8 @@ export function CreateProjectDialog({ isOpen, onClose }: CreateProjectDialogProp
                             <button
                                 onClick={() => setIsPublic(true)}
                                 className={`flex-1 flex items-center gap-3 p-3 rounded-lg border transition-all ${isPublic
-                                        ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 text-white'
-                                        : 'border-[var(--border-subtle)] bg-[#1a1a1d] text-zinc-400 hover:border-zinc-600'
+                                    ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/10 text-white'
+                                    : 'border-[var(--border-subtle)] bg-[#1a1a1d] text-zinc-400 hover:border-zinc-600'
                                     }`}
                             >
                                 <Globe size={16} />

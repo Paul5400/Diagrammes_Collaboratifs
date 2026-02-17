@@ -9,6 +9,7 @@ import {
 import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
 import { User } from '@/context/AuthContext';
+import { SaveButton } from './SaveButton';
 
 interface EditorHeaderProps {
   projectTitleLabel: string;
@@ -16,6 +17,10 @@ interface EditorHeaderProps {
   currentUserData?: User | null;
   diagramType: string;
   onExportClick?: () => void;
+  onSaveClick?: () => void;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
+  hasUnsavedChanges?: boolean;
 }
 
 export function EditorHeader(props: EditorHeaderProps) {
@@ -130,6 +135,15 @@ export function EditorHeader(props: EditorHeaderProps) {
             </>
           )}
         </button>
+
+        {props.onSaveClick && (
+          <SaveButton
+            onSave={props.onSaveClick}
+            isSaving={props.isSaving || false}
+            lastSaved={props.lastSaved || null}
+            hasUnsavedChanges={props.hasUnsavedChanges || false}
+          />
+        )}
 
         <button
           onClick={props.onExportClick}

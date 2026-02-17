@@ -13,6 +13,7 @@ import { CollaborativeEditorRef } from '../../../components/CollaborativeEditor'
 import { useAuth } from '@/context/AuthContext';
 import { MermaidCode } from '@/types/DiagramTypes';
 import { Loader2 } from 'lucide-react';
+import { useGitHubAutoSave } from '@/hooks/useGitHubAutoSave';
 
 const CollaborativeEditor = dynamic(
     () => import('../../../components/CollaborativeEditor').then((mod) => mod.CollaborativeEditor),
@@ -60,6 +61,13 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
+
+    // GitHub Auto-Save hook
+    const { manualSave, lastSaved, isSaving, hasUnsavedChanges } = useGitHubAutoSave({
+        diagramId: selectedDiagramId,
+        content: mermaidCode,
+        enabled: !!selectedDiagramId && !!user,
+    });
 
     // Resolve params
     useEffect(() => {
@@ -210,6 +218,10 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 currentUserData={user}
                 diagramType={currentDiagramType}
                 onExportClick={() => setIsExportDialogOpen(true)}
+                onSaveClick={manualSave}
+                isSaving={isSaving}
+                lastSaved={lastSaved}
+                hasUnsavedChanges={hasUnsavedChanges}
             />
 
             {/* Main Area */}

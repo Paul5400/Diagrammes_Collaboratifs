@@ -1,6 +1,7 @@
 import {
     Controller,
     Get,
+    Post,
     Patch,
     Delete,
     Body,
@@ -78,5 +79,23 @@ export class DiagrammeController {
     ) {
         const githubId = (req as any).user?.sub;
         return this.diagrammeService.getVersionAtCommit(id, sha, githubId);
+    }
+
+    // Charger le contenu depuis GitHub 
+    @Get(':id/content')
+    async getContent(@Req() req: FastifyRequest, @Param('id') id: string) {
+        const githubId = (req as any).user?.sub;
+        return this.diagrammeService.loadFromGithub(id, githubId);
+    }
+
+    // Sauvegarder vers GitHub 
+    @Post(':id/save-github')
+    async saveToGithub(
+        @Req() req: FastifyRequest,
+        @Param('id') id: string,
+        @Body('contenu') contenu: string,
+    ) {
+        const githubId = (req as any).user?.sub;
+        return this.diagrammeService.saveToGithub(id, githubId, contenu);
     }
 }

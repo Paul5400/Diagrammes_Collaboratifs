@@ -313,4 +313,176 @@ export class DiagrammeService {
             titre: diagramme.titre,
         };
     }
+
+    // Charger depuis GitHub 
+    async loadFromGithub(
+        diagrammeId: string,
+        githubId: string,
+    ): Promise<{ contenu: string; titre: string; cheminGit: string }> {
+        const githubUser = await this.userService.findByGithubId(githubId);
+        if (!githubUser) {
+            throw new NotFoundException('Utilisateur introuvable');
+        }
+
+        const diagramme = await this.prisma.diagramme.findUnique({
+            where: { id: diagrammeId },
+            include: { projet: true },
+        });
+
+        if (!diagramme) {
+            throw new NotFoundException('Diagramme introuvable');
+        }
+
+
+        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+            throw new ForbiddenException("Vous n'avez pas accès à ce diagramme");
+        }
+
+
+        if (!diagramme.cheminGit) {
+            this.logger.warn(`Diagramme ${diagrammeId} n'a pas de cheminGit, retourne contenu vide`);
+            return {
+                contenu: '',
+                titre: diagramme.titre,
+                cheminGit: '',
+            };
+        }
+
+        if (!diagramme.projet?.cheminGit) {
+            throw new BadRequestException('Ce projet n\'a pas de dépôt GitHub associé');
+        }
+
+
+        const accessToken = await this.userService.getGithubAccessToken(githubId);
+        if (!accessToken) {
+            throw new BadRequestException('Token GitHub non disponible, reconnectez-vous');
+        }
+
+        const [owner, repo] = diagramme.projet.cheminGit.split('/');
+
+        try {
+
+            const response = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/contents/${diagramme.cheminGit}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                },
+            );
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    this.logger.warn(`Fichier GitHub introuvable: ${diagramme.cheminGit}`);
+                    return {
+                        contenu: '',
+                        titre: diagramme.titre,
+                        cheminGit: diagramme.cheminGit,
+                    };
+                }
+                throw new BadRequestException('Erreur lors du chargement depuis GitHub');
+            }
+
+            const data: any = await response.json();
+
+            const contenu = Buffer.from(data.content, 'base64').toString('utf-8');
+
+            return {
+                contenu,
+                titre: diagramme.titre,
+                cheminGit: diagramme.cheminGit,
+            };
+        } catch (error) {
+            this.logger.error(`Erreur loadFromGithub: ${error.message}`);
+            throw new BadRequestException('Impossible de charger le contenu depuis GitHub');
+        }
+    }
+
+    // Sauvegarder vers GitHub 
+    async saveToGithub(
+        diagrammeId: string,
+        githubId: string,
+        contenu: string,
+    ): Promise<{ success: boolean; path: string; sha: string; url: string }> {
+        const githubUser = await this.userService.findByGithubId(githubId);
+        if (!githubUser) {
+            throw new NotFoundException('Utilisateur introuvable');
+        }
+
+        const diagramme = await this.prisma.diagramme.findUnique({
+            where: { id: diagrammeId },
+            include: { projet: true },
+        });
+
+        if (!diagramme) {
+            throw new NotFoundException('Diagramme introuvable');
+        }
+
+
+        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+            throw new ForbiddenException("Vous n'avez pas le droit de sauvegarder ce diagramme");
+        }
+
+        if (!diagramme.projet?.cheminGit) {
+            throw new BadRequestException('Ce projet n\'a pas de dépôt GitHub associé');
+        }
+
+        // Récupération du token depuis Redis
+        const accessToken = await this.userService.getGithubAccessToken(githubId);
+        if (!accessToken) {
+            throw new BadRequestException('Token GitHub non disponible, reconnectez-vous');
+        }
+
+        const [owner, repo] = diagramme.projet.cheminGit.split('/');
+        
+
+        let filePath = diagramme.cheminGit;
+        if (!filePath) {
+            const fileName = this.gitService.slugify(diagramme.titre) || `diagram-${diagramme.id}`;
+            filePath = `diagrams/${fileName}.mmd`;
+        }
+
+        try {
+            // SHA (Secure Hash Algorithm) requis pour update GitHub
+            const currentSha = await this.gitService.getFileSha(
+                accessToken,
+                owner,
+                repo,
+                filePath,
+            );
+
+
+            const result = await this.gitService.createOrUpdateFile(
+                accessToken,
+                owner,
+                repo,
+                filePath,
+                contenu,
+                currentSha ? `Update: ${diagramme.titre}` : `Create: ${diagramme.titre}`,
+                currentSha || undefined,
+            );
+
+
+            await this.prisma.diagramme.update({
+                where: { id: diagrammeId },
+                data: { 
+                    cheminGit: filePath,
+                    dateModification: new Date(),
+                },
+            });
+
+            this.logger.log(`Diagramme sauvegardé sur GitHub: ${diagramme.titre} -> ${filePath}`);
+
+            return {
+                success: true,
+                path: filePath,
+                sha: result.sha,
+                url: result.url,
+            };
+        } catch (error) {
+            this.logger.error(`Erreur saveToGithub: ${error.message}`);
+            throw new BadRequestException('Impossible de sauvegarder sur GitHub');
+        }
+    }
 }

@@ -1,52 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import Link from 'next/link';
 import { Logo } from '../../components/Logo';
+import { useAuth } from '@/context/AuthContext';
+import { Loader2 } from 'lucide-react';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading, logout } = useAuth();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = Cookies.get('diagrammer_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
 
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          setIsAuthenticated(true);
-        } else {
-          router.push('/login');
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        router.push('/login');
-      }
-    };
-
-    fetchUser();
-  }, [router]);
-
-  if (!isAuthenticated || !user) {
-    return null;
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-page)] text-[var(--text-primary)]">
+        <Loader2 size={32} className="animate-spin text-[var(--accent-primary)]" />
+      </div>
+    );
   }
 
   return (
@@ -146,10 +122,7 @@ export default function ProfilePage() {
 
               <div className="pt-6 border-t border-[var(--border-subtle)] mt-6">
                 <button
-                  onClick={() => {
-                    Cookies.remove('diagrammer_token');
-                    router.push('/login');
-                  }}
+                  onClick={logout}
                   className="w-full py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-400/10 border border-transparent hover:border-red-400/20 transition-all flex items-center justify-center gap-2"
                 >
                   Se déconnecter

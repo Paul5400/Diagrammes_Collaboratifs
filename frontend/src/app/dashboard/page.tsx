@@ -9,6 +9,8 @@ import { UserMenu } from '../../components/UserMenu';
 import { CreateProjectDialog } from '../../components/dashboard/CreateProjectDialog';
 import { FolderGit2, Loader2 } from 'lucide-react';
 
+import { useAuth } from '@/context/AuthContext';
+
 interface Projet {
   id: string;
   titre: string;
@@ -21,51 +23,21 @@ interface Projet {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [projects, setProjects] = useState<Projet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Vérification de l'authentification
+  // Redirection si non authentifié
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = Cookies.get('diagrammer_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          setIsAuthenticated(true);
-        } else {
-          Cookies.remove('diagrammer_token');
-          router.push('/login');
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-        router.push('/login');
-      }
-    };
-
-    fetchUser();
-  }, [router]);
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
 
   // Fetch des projets
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!user) return;
 
     const fetchProjects = async () => {
       const token = Cookies.get('diagrammer_token');
@@ -94,10 +66,14 @@ export default function DashboardPage() {
     };
 
     fetchProjects();
-  }, [isAuthenticated]);
+  }, [user]);
 
-  if (!isAuthenticated || !user) {
-    return null;
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-page)] text-[var(--text-primary)]">
+        <Loader2 size={32} className="animate-spin text-[var(--accent-primary)]" />
+      </div>
+    );
   }
 
   const handleLogout = () => {

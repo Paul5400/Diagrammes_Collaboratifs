@@ -34,7 +34,7 @@ export function CreateDiagramDialog({ isOpen, onClose }: CreateDiagramDialogProp
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-2xl bg-[#0f0f11] border border-[var(--border-subtle)] rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-2xl bg-[#0f0f11] border border-[var(--border-subtle)] rounded-xl shadow-2xl animate-in zoom-in-95 duration-200">
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
@@ -47,7 +47,7 @@ export function CreateDiagramDialog({ isOpen, onClose }: CreateDiagramDialogProp
                     </button>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className={`p-6 space-y-6 overflow-visible ${isTypeDropdownOpen ? 'pb-96' : ''}`}>
                     {/* Name Input */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-[var(--text-secondary)]">
@@ -83,7 +83,7 @@ export function CreateDiagramDialog({ isOpen, onClose }: CreateDiagramDialogProp
                         </button>
 
                         {isTypeDropdownOpen && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1d] border border-[var(--border-subtle)] rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1d] border border-[var(--border-subtle)] rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
                                 {DIAGRAM_TEMPLATES.map((template) => (
                                     <button
                                         key={template.id}

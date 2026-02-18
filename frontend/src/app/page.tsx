@@ -42,7 +42,7 @@ export default function Home() {
             ) : user ? (
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-white text-black hover:bg-zinc-200 transition-all active:scale-95"
+                className="inline-flex items-center gap-2 text-sm md:text-base inline-flex items-center justify-center px-4 py-2 rounded-md text-base font-medium transition-all duration-200 border border-transparent bg-[var(--accent-primary)] text-white shadow-[0_0_10px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-px"
               >
                 <LayoutDashboard size={16} />
                 Dashboard
@@ -53,13 +53,13 @@ export default function Home() {
                   href="/login"
                   className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
                 >
-                  Log in
+                  Se connecter
                 </Link>
                 <Link
                   href="/register"
                   className="inline-flex items-center justify-center px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 border border-transparent bg-[var(--accent-primary)] text-white shadow-[0_0_10px_var(--accent-glow)] hover:bg-[var(--accent-hover)] hover:-translate-y-px"
                 >
-                  Sign up
+                  S'inscrire
                 </Link>
               </div>
             )}

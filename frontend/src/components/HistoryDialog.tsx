@@ -134,7 +134,7 @@ export function HistoryDialog({ isOpen, onClose, diagramId, onRestore }: History
                 <Loader2 size={24} className="animate-spin text-[var(--accent-primary)]" />
               </div>
             ) : commits.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-[var(--text-secondary)]">
+              <div className="flex items-center justify-center h-full text-[var(--text-secondary)] py-20">
                 Aucun historique disponible
               </div>
             ) : (

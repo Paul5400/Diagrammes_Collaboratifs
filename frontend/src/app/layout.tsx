@@ -30,6 +30,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_BACKEND_URL} />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_BACKEND_URL} />
+        {process.env.NEXT_PUBLIC_WS_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_WS_URL} />
+        )}
+      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >

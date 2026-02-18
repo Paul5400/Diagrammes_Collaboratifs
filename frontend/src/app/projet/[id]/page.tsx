@@ -134,29 +134,29 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     }, [projetId, user, fetchProjet]);
 
     // Handle diagram selection
-    const handleSelectDiagram = (diagrammeId: string) => {
+    const handleSelectDiagram = useCallback((diagrammeId: string) => {
         const diag = projet?.diagrammes.find(d => d.id === diagrammeId);
         if (diag) {
             setSelectedDiagramId(diagrammeId);
             setMermaidCode(diag.contenu || '');
         }
-    };
+    }, [projet?.diagrammes]);
 
     // Handle new diagram created
-    const handleDiagramCreated = (newDiagramme: DiagrammeItem) => {
+    const handleDiagramCreated = useCallback((newDiagramme: DiagrammeItem) => {
         setProjet((prev) => {
             if (!prev) return prev;
             return { ...prev, diagrammes: [newDiagramme, ...prev.diagrammes] };
         });
         setSelectedDiagramId(newDiagramme.id);
         setMermaidCode(newDiagramme.contenu || '');
-    };
+    }, []);
 
     const handleContentUpdate = useCallback((content: MermaidCode | undefined) => {
         setMermaidCode(content || '');
     }, []);
 
-    const handleDeleteDiagram = async (diagrammeId: string, e: React.MouseEvent) => {
+    const handleDeleteDiagram = useCallback(async (diagrammeId: string, e: React.MouseEvent) => {
         console.log(`[handleDeleteDiagram] Requested for: ${diagrammeId}`);
         e.stopPropagation();
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce diagramme ?')) return;
@@ -194,7 +194,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             console.error('Error deleting diagram:', error);
             alert('Erreur lors de la suppression');
         }
-    };
+    }, [selectedDiagramId]);
 
     const handleMermaidRender = useCallback((svg: string) => {
         setCurrentSvgContent(svg);
@@ -204,6 +204,14 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         setMermaidCode(content);
         collaborativeEditorRef.current?.injectNewContent(content);
     }, []);
+
+    const selectedDiagram = React.useMemo(() =>
+        projet?.diagrammes.find(d => d.id === selectedDiagramId) || null,
+        [projet?.diagrammes, selectedDiagramId]);
+
+    const currentDiagramType = React.useMemo(() =>
+        getDiagramTypeFromCode(mermaidCode),
+        [mermaidCode]);
 
     // Loading state
     if (authLoading || isLoading || !projet) {
@@ -246,8 +254,8 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                             <div className="shimmer" />
                         </div>
                         <div className="space-y-4">
-                            {[...Array(15)].map((_, i) => (
-                                <div key={i} className="h-2 w-full skeleton shimmer-wrapper opacity-10" style={{ width: `${Math.random() * 40 + 60}%` }}>
+                            {[75, 85, 65, 90, 80, 70, 85, 95, 60, 75, 80, 90, 70, 85, 75].map((w, i) => (
+                                <div key={i} className="h-2 w-full skeleton shimmer-wrapper opacity-10" style={{ width: `${w}%` }}>
                                     <div className="shimmer" />
                                 </div>
                             ))}
@@ -266,8 +274,6 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         );
     }
 
-    const selectedDiagram = projet.diagrammes.find(d => d.id === selectedDiagramId);
-    const currentDiagramType = getDiagramTypeFromCode(mermaidCode);
 
     return (
         <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">

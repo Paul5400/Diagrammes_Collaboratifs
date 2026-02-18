@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GitBranch, Check, Loader2, ChevronDown, File, FolderGit2 } from 'lucide-react';
+import { GitBranch, Check, Loader2, ChevronDown, File, FolderGit2, Github, GithubIcon } from 'lucide-react';
 
 interface SaveButtonProps {
   onSave: () => void;
@@ -82,24 +82,23 @@ export function SaveButton({ onSave, onSaveAll, isSaving, lastSaved, hasUnsavedC
         {isSaving ? (
           <>
             <Loader2 size={14} className="animate-spin" />
-            <span>Saving...</span>
+            <span>Sauvegarde en cours...</span>
           </>
         ) : !canSave ? (
           <>
-            <GitBranch size={14} />
-            <span>Please wait...</span>
+            <span>Veuillez patienter...</span>
           </>
         ) : hasUnsavedChanges ? (
           <>
-            <GitBranch size={14} />
-            <span>Save to GitHub</span>
+            <GithubIcon size={14} />
+            <span>Sauvegarder sur GitHub</span>
             <ChevronDown size={12} />
           </>
         ) : (
           <>
             <Check size={14} />
             <span>
-              {lastSaved ? timeAgo(lastSaved) : 'Not saved yet'}
+              {lastSaved ? timeAgo(lastSaved) : 'Pas encore sauvegardé'}
             </span>
             <ChevronDown size={12} />
           </>

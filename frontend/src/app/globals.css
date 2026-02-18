@@ -236,3 +236,37 @@ body {
 [id^='mermaid-'] .error-text {
   display: none !important;
 }
+
+/** 
+ * Yjs Remote Selection & Cursor Styles 
+ * These classes are added by y-monaco for collaborative cursors
+ */
+.yRemoteSelection {
+  background-color: rgba(124, 58, 237, 0.25);
+}
+
+.yRemoteSelectionHead {
+  position: absolute;
+  border-left: 1px solid;
+  border-left-color: inherit;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.yRemoteSelectionHead::after {
+  position: absolute;
+  content: attr(data-user-name);
+  top: -1.4em;
+  left: -1px;
+  padding: 1px 6px;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: normal;
+  white-space: nowrap;
+  color: #fff;
+  background-color: inherit;
+  border-radius: 4px 4px 4px 0;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

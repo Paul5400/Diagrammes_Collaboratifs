@@ -255,6 +255,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                                 onContentUpdate={handleContentUpdate}
                                 initialContentValue={selectedDiagram.contenu || ''}
                                 currentDiagramType={currentDiagramType}
+                                currentUser={user}
                             />
                         </section>
 

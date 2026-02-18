@@ -26,6 +26,7 @@ interface CollaborativeEditorProps {
   onContentUpdate: (updatedContent: MermaidCode | undefined) => void;
   initialContentValue?: MermaidCode;
   currentDiagramType?: string;
+  currentUser?: { username?: string; avatarUrl?: string } | null;
   isReadOnly?: boolean;
 }
 
@@ -64,7 +65,8 @@ export const CollaborativeEditor = forwardRef<
   const collaborativeYjsHook = useYjs(
     currentSharedDocumentId,
     monacoEditorInstance,
-    initialContentFallbackValue
+    initialContentFallbackValue,
+    props.currentUser || undefined
   );
   // On récupère la fonction pour mettre à jour le contenu de manière simple
   const updateCollaborativeContent = collaborativeYjsHook.setContent;

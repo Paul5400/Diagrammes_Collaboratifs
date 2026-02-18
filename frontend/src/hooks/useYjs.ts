@@ -12,7 +12,12 @@ import { APP_CONFIG } from '@/config/AppConfig';
  * Hook de collaboration en temps réel avec Yjs (CRDT) et Monaco Editor
  * Synchronise l'éditeur entre plusieurs utilisateurs via WebSocket
  */
-export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | null, defaultValue: MermaidCode = '') {
+export function useYjs(
+    id: DiagramId,
+    editor: editor.IStandaloneCodeEditor | null,
+    defaultValue: MermaidCode = '',
+    userData?: { username?: string; avatarUrl?: string }
+) {
     // useRef : Garde la même instance sans déclencher de re-render (important pour les connexions WebSocket)
     const providerRef = useRef<HocuspocusProvider | null>(null);
     const bindingRef = useRef<MonacoBinding | null>(null);
@@ -42,6 +47,19 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
         });
 
         providerRef.current = provider;
+
+        // Configuration de l'Awareness (curseurs et présence)
+        if (userData && provider.awareness) {
+            const colors = ['#7c3aed', '#f43f5e', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+            provider.awareness.setLocalStateField('user', {
+                name: userData.username || 'Anonyme',
+                color: randomColor,
+                githubId: userData.username // On ajoute explicitement l'ID GitHub
+            });
+        }
+
         const type = ydoc.getText('monaco_content');
         setYtext(type);
 
@@ -96,7 +114,7 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
             ydocRef.current = null;
             setIsSynced(false);
         };
-    }, [id, editor]);
+    }, [id, editor, userData]); // Ajout de userData ici
 
     // Évite que les autres clients voient temporairement le document vide
     const setContent = (content: string) => {

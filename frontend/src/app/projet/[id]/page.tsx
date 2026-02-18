@@ -65,7 +65,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
 
     // GitHub Auto-Save hook
-    const { manualSave, lastSaved, isSaving, hasUnsavedChanges } = useGitHubAutoSave({
+    const { manualSave, lastSaved, isSaving, hasUnsavedChanges, canSave } = useGitHubAutoSave({
         diagramId: selectedDiagramId,
         content: mermaidCode,
         enabled: !!selectedDiagramId && !!user,
@@ -205,6 +205,34 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         collaborativeEditorRef.current?.injectNewContent(content);
     }, []);
 
+    // Sauvegarder tous les diagrammes du projet
+    const handleSaveAll = useCallback(async () => {
+        if (!projetId || isSaving) return;
+
+        const token = Cookies.get('diagrammer_token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/projets/${projetId}/save`,
+                {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log(`Saved ${result.savedDiagrams.length} diagrams to GitHub`);
+                if (result.errors.length > 0) {
+                    console.error('Some diagrams failed to save:', result.errors);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to save all diagrams:', error);
+        }
+    }, [projetId, isSaving]);
+
     // Loading state
     if (authLoading || isLoading || !projet) {
         return (
@@ -227,9 +255,11 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 onExportClick={() => setIsExportDialogOpen(true)}
                 onHistoryClick={() => setIsHistoryDialogOpen(true)}
                 onSaveClick={manualSave}
+                onSaveAllClick={handleSaveAll}
                 isSaving={isSaving}
                 lastSaved={lastSaved}
                 hasUnsavedChanges={hasUnsavedChanges}
+                canSave={canSave}
             />
 
             {/* Main Area */}
@@ -253,7 +283,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                                 ref={collaborativeEditorRef}
                                 sharedDocumentId={selectedDiagram.id}
                                 onContentUpdate={handleContentUpdate}
-                                initialContentValue={selectedDiagram.contenu || ''}
+                                initialContentValue={''}
                                 currentDiagramType={currentDiagramType}
                             />
                         </section>

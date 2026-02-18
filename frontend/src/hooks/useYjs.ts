@@ -64,18 +64,10 @@ export function useYjs(id: DiagramId, editor: editor.IStandaloneCodeEditor | nul
                     provider.awareness // Partage les curseurs entre utilisateurs
                 );
 
-                // Initialisation avec le contenu par défaut si le document est vide
-                if (type.length === 0 && defaultValue) {
-                    console.log(`[useYjs] Document vide détecté, insertion du defaultValue de longueur ${defaultValue.length}`);
-                    ydoc.transact(() => {
-                        type.insert(0, defaultValue);
-                    });
-                } else if (type.length > 0) {
-                    console.log(`[useYjs] Le document a déjà du contenu (${type.length} chars)`);
-                }
+                // Le backend charge automatiquement depuis Redis/GitHub/DB
+                console.log(`[useYjs] MonacoBinding créé, contenu: ${type.length} chars`);
 
                 bindingRef.current = binding;
-                console.log('[useYjs] MonacoBinding créé');
             }
         };
 

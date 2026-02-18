@@ -109,15 +109,17 @@ export function EditorHeader(props: EditorHeaderProps) {
               {currentProjectTitle}
             </h1>
           </div>
-          
-          {props.onDeleteProjectClick && (
-            <ProjectMenu onDeleteClick={props.onDeleteProjectClick} />
-          )}
         </div>
 
       </div>
 
       <div className="flex items-center gap-3">
+        {props.onDeleteProjectClick && (
+          <ProjectMenu onDeleteClick={props.onDeleteProjectClick} />
+        )}
+
+        <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />
+
         <div className="flex -space-x-2 mr-2">
           {[1, 2].map((userAvatarPlaceholderIndex) => (
             <div

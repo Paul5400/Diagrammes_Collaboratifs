@@ -326,6 +326,8 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         );
     }
 
+    const selectedDiagram = projet?.diagrammes.find(d => d.id === selectedDiagramId);
+    const currentDiagramType = selectedDiagram ? getDiagramTypeFromCode(mermaidCode) : '';
 
     return (
         <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">

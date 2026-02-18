@@ -10,6 +10,7 @@ import { DiagramSidebar } from '../../../components/DiagramSidebar';
 import { CreateDiagramDialog } from '../../../components/CreateDiagramDialog';
 import { ExportDiagramDialog } from '../../../components/ExportDiagramDialog';
 import { HistoryDialog } from '../../../components/HistoryDialog';
+import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog';
 import { CollaborativeEditorRef } from '../../../components/CollaborativeEditor';
 import { useAuth } from '@/context/AuthContext';
 import { MermaidCode } from '@/types/DiagramTypes';
@@ -61,6 +62,8 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
 
@@ -200,6 +203,35 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         setCurrentSvgContent(svg);
     }, []);
 
+    const handleDeleteProject = async () => {
+        if (!projetId) return;
+        
+        setIsDeleting(true);
+        const token = Cookies.get('diagrammer_token');
+        
+        try {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/projets/${projetId}`,
+                {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to delete project');
+            }
+
+            // Redirection vers le dashboard
+            router.push('/dashboard');
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            alert('Erreur lors de la suppression du projet');
+            setIsDeleting(false);
+            setIsDeleteDialogOpen(false);
+        }
+    };
+
     const handleRestoreVersion = useCallback((content: string) => {
         setMermaidCode(content);
         collaborativeEditorRef.current?.injectNewContent(content);
@@ -226,6 +258,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 diagramType={currentDiagramType}
                 onExportClick={() => setIsExportDialogOpen(true)}
                 onHistoryClick={() => setIsHistoryDialogOpen(true)}
+                onDeleteProjectClick={() => setIsDeleteDialogOpen(true)}
                 onSaveClick={manualSave}
                 isSaving={isSaving}
                 lastSaved={lastSaved}
@@ -298,6 +331,14 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                     onRestore={handleRestoreVersion}
                 />
             )}
+
+            <DeleteProjectDialog
+                isOpen={isDeleteDialogOpen}
+                onClose={() => setIsDeleteDialogOpen(false)}
+                projectName={projet.titre}
+                onConfirm={handleDeleteProject}
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }

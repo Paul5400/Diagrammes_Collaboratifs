@@ -11,6 +11,7 @@ import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
 import { User } from '@/context/AuthContext';
 import { SaveButton } from './SaveButton';
+import { ProjectMenu } from './ProjectMenu';
 
 interface EditorHeaderProps {
   projectTitleLabel: string;
@@ -20,6 +21,7 @@ interface EditorHeaderProps {
   onExportClick?: () => void;
   onSaveClick?: () => void;
   onHistoryClick?: () => void;
+  onDeleteProjectClick?: () => void;
   isSaving?: boolean;
   lastSaved?: Date | null;
   hasUnsavedChanges?: boolean;
@@ -99,10 +101,16 @@ export function EditorHeader(props: EditorHeaderProps) {
 
         <div className="h-4 w-[1px] bg-[var(--border-subtle)]" />
 
-        <div className="flex flex-col">
-          <h1 className="text-sm font-semibold text-white tracking-tight leading-tight">
-            {currentProjectTitle}
-          </h1>
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col">
+            <h1 className="text-sm font-semibold text-white tracking-tight leading-tight">
+              {currentProjectTitle}
+            </h1>
+          </div>
+          
+          {props.onDeleteProjectClick && (
+            <ProjectMenu onDeleteClick={props.onDeleteProjectClick} />
+          )}
         </div>
 
       </div>

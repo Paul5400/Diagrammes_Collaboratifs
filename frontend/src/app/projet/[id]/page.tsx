@@ -9,6 +9,7 @@ import { MermaidPreview } from '../../../components/MermaidPreview';
 import { DiagramSidebar } from '../../../components/DiagramSidebar';
 import { CreateDiagramDialog } from '../../../components/CreateDiagramDialog';
 import { ExportDiagramDialog } from '../../../components/ExportDiagramDialog';
+import { HistoryDialog } from '../../../components/HistoryDialog';
 import { CollaborativeEditorRef } from '../../../components/CollaborativeEditor';
 import { useAuth } from '@/context/AuthContext';
 import { MermaidCode } from '@/types/DiagramTypes';
@@ -58,6 +59,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [mermaidCode, setMermaidCode] = useState<MermaidCode>('');
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+    const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
@@ -198,6 +200,11 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         setCurrentSvgContent(svg);
     }, []);
 
+    const handleRestoreVersion = useCallback((content: string) => {
+        setMermaidCode(content);
+        collaborativeEditorRef.current?.injectNewContent(content);
+    }, []);
+
     // Loading state
     if (authLoading || isLoading || !projet) {
         return (
@@ -218,6 +225,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 currentUserData={user}
                 diagramType={currentDiagramType}
                 onExportClick={() => setIsExportDialogOpen(true)}
+                onHistoryClick={() => setIsHistoryDialogOpen(true)}
                 onSaveClick={manualSave}
                 isSaving={isSaving}
                 lastSaved={lastSaved}
@@ -280,6 +288,15 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 svgContent={currentSvgContent}
                 diagramName={selectedDiagram?.titre || 'diagram'}
             />
+
+            {selectedDiagramId && (
+                <HistoryDialog
+                    isOpen={isHistoryDialogOpen}
+                    onClose={() => setIsHistoryDialogOpen(false)}
+                    diagramId={selectedDiagramId}
+                    onRestore={handleRestoreVersion}
+                />
+            )}
         </div>
     );
 }

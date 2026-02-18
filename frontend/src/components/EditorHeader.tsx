@@ -5,6 +5,7 @@ import {
   Download,
   Layout,
   ChevronLeft,
+  Clock,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
@@ -18,6 +19,7 @@ interface EditorHeaderProps {
   diagramType: string;
   onExportClick?: () => void;
   onSaveClick?: () => void;
+  onHistoryClick?: () => void;
   isSaving?: boolean;
   lastSaved?: Date | null;
   hasUnsavedChanges?: boolean;
@@ -143,6 +145,16 @@ export function EditorHeader(props: EditorHeaderProps) {
             lastSaved={props.lastSaved || null}
             hasUnsavedChanges={props.hasUnsavedChanges || false}
           />
+        )}
+
+        {props.onHistoryClick && (
+          <button
+            onClick={props.onHistoryClick}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all"
+          >
+            <Clock size={14} />
+            Historique
+          </button>
         )}
 
         <button

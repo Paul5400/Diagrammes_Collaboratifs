@@ -168,7 +168,7 @@ export const MermaidPreview = React.memo(function MermaidPreview(props: MermaidP
 
       {/* CONTENEUR DU SVG : Applique le Zoom et le Pan via transform CSS */}
       <div
-        className="absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-out"
+        className="absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-out [&>svg]:max-w-none [&>svg]:max-h-none"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: 'center center',

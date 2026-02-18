@@ -1,3 +1,4 @@
+import React from 'react';
 import Link from 'next/link';
 import { FolderGit2 } from 'lucide-react';
 
@@ -24,7 +25,7 @@ function formatRelativeDate(dateStr: string): string {
   return `Modifié le ${date.toLocaleDateString('fr-FR')}`;
 }
 
-export function ProjectCard({ id, title, description, diagramCount, dateModification }: ProjectCardProps) {
+export const ProjectCard = React.memo(function ProjectCard({ id, title, description, diagramCount, dateModification }: ProjectCardProps) {
   return (
     <Link href={`/projet/${id}`} className="block group">
       <div className="bg-[var(--bg-panel)] border border-white/10 rounded-lg overflow-hidden transition-all duration-200 hover:border-white/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--accent-primary)]/5">
@@ -60,4 +61,4 @@ export function ProjectCard({ id, title, description, diagramCount, dateModifica
       </div>
     </Link>
   );
-}
+});

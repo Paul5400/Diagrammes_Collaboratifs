@@ -10,6 +10,7 @@ import { DiagramSidebar } from '../../../components/DiagramSidebar';
 import { CreateDiagramDialog } from '../../../components/CreateDiagramDialog';
 import { ExportDiagramDialog } from '../../../components/ExportDiagramDialog';
 import { HistoryDialog } from '../../../components/HistoryDialog';
+import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog';
 import { CollaborativeEditorRef } from '../../../components/CollaborativeEditor';
 import { useAuth } from '@/context/AuthContext';
 import { MermaidCode } from '@/types/DiagramTypes';
@@ -61,6 +62,8 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
     const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
 
@@ -134,29 +137,29 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     }, [projetId, user, fetchProjet]);
 
     // Handle diagram selection
-    const handleSelectDiagram = (diagrammeId: string) => {
+    const handleSelectDiagram = useCallback((diagrammeId: string) => {
         const diag = projet?.diagrammes.find(d => d.id === diagrammeId);
         if (diag) {
             setSelectedDiagramId(diagrammeId);
             setMermaidCode(diag.contenu || '');
         }
-    };
+    }, [projet?.diagrammes]);
 
     // Handle new diagram created
-    const handleDiagramCreated = (newDiagramme: DiagrammeItem) => {
+    const handleDiagramCreated = useCallback((newDiagramme: DiagrammeItem) => {
         setProjet((prev) => {
             if (!prev) return prev;
             return { ...prev, diagrammes: [newDiagramme, ...prev.diagrammes] };
         });
         setSelectedDiagramId(newDiagramme.id);
         setMermaidCode(newDiagramme.contenu || '');
-    };
+    }, []);
 
     const handleContentUpdate = useCallback((content: MermaidCode | undefined) => {
         setMermaidCode(content || '');
     }, []);
 
-    const handleDeleteDiagram = async (diagrammeId: string, e: React.MouseEvent) => {
+    const handleDeleteDiagram = useCallback(async (diagrammeId: string, e: React.MouseEvent) => {
         console.log(`[handleDeleteDiagram] Requested for: ${diagrammeId}`);
         e.stopPropagation();
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce diagramme ?')) return;
@@ -194,11 +197,40 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             console.error('Error deleting diagram:', error);
             alert('Erreur lors de la suppression');
         }
-    };
+    }, [selectedDiagramId]);
 
     const handleMermaidRender = useCallback((svg: string) => {
         setCurrentSvgContent(svg);
     }, []);
+
+    const handleDeleteProject = async () => {
+        if (!projetId) return;
+        
+        setIsDeleting(true);
+        const token = Cookies.get('diagrammer_token');
+        
+        try {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/projets/${projetId}`,
+                {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to delete project');
+            }
+
+            // Redirection vers le dashboard
+            router.push('/dashboard');
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            alert('Erreur lors de la suppression du projet');
+            setIsDeleting(false);
+            setIsDeleteDialogOpen(false);
+        }
+    };
 
     const handleRestoreVersion = useCallback((content: string) => {
         setMermaidCode(content);
@@ -236,14 +268,64 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     // Loading state
     if (authLoading || isLoading || !projet) {
         return (
-            <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg-page)]">
-                <Loader2 size={32} className="animate-spin text-[var(--accent-primary)]" />
+            <div className="h-screen w-screen bg-[var(--bg-page)] flex flex-col overflow-hidden">
+                {/* Header Skeleton */}
+                <div className="h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center justify-between px-6">
+                    <div className="h-8 w-32 skeleton shimmer-wrapper">
+                        <div className="shimmer" />
+                    </div>
+                    <div className="flex gap-4">
+                        <div className="h-8 w-24 skeleton shimmer-wrapper opacity-50">
+                            <div className="shimmer" />
+                        </div>
+                        <div className="h-8 w-24 skeleton shimmer-wrapper opacity-50">
+                            <div className="shimmer" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Content Skeleton */}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Sidebar Skeleton */}
+                    <div className="w-64 h-full border-r border-[var(--border-subtle)] bg-[#0c0c0e] p-4 flex flex-col gap-4">
+                        <div className="h-4 w-24 skeleton shimmer-wrapper opacity-20">
+                            <div className="shimmer" />
+                        </div>
+                        <div className="space-y-3">
+                            {[...Array(8)].map((_, i) => (
+                                <div key={i} className="h-10 w-full rounded-md skeleton shimmer-wrapper opacity-10">
+                                    <div className="shimmer" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Editor pane skeleton */}
+                    <div className="w-[45%] h-full border-r border-[var(--border-subtle)] p-8">
+                        <div className="w-full h-8 skeleton mb-6 shimmer-wrapper opacity-20">
+                            <div className="shimmer" />
+                        </div>
+                        <div className="space-y-4">
+                            {[75, 85, 65, 90, 80, 70, 85, 95, 60, 75, 80, 90, 70, 85, 75].map((w, i) => (
+                                <div key={i} className="h-2 w-full skeleton shimmer-wrapper opacity-10" style={{ width: `${w}%` }}>
+                                    <div className="shimmer" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Preview pane skeleton */}
+                    <div className="flex-1 h-full bg-[#050505] flex items-center justify-center">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-[var(--accent-primary)] opacity-5 blur-3xl scale-150 animate-pulse"></div>
+                            <Loader2 size={32} className="animate-spin text-[var(--accent-primary)] opacity-20" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
 
-    const selectedDiagram = projet.diagrammes.find(d => d.id === selectedDiagramId);
-    const currentDiagramType = getDiagramTypeFromCode(mermaidCode);
 
     return (
         <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">
@@ -254,6 +336,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 diagramType={currentDiagramType}
                 onExportClick={() => setIsExportDialogOpen(true)}
                 onHistoryClick={() => setIsHistoryDialogOpen(true)}
+                onDeleteProjectClick={() => setIsDeleteDialogOpen(true)}
                 onSaveClick={manualSave}
                 onSaveAllClick={handleSaveAll}
                 isSaving={isSaving}
@@ -285,6 +368,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                                 onContentUpdate={handleContentUpdate}
                                 initialContentValue={''}
                                 currentDiagramType={currentDiagramType}
+                                currentUser={user}
                             />
                         </section>
 
@@ -327,6 +411,14 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                     onRestore={handleRestoreVersion}
                 />
             )}
+
+            <DeleteProjectDialog
+                isOpen={isDeleteDialogOpen}
+                onClose={() => setIsDeleteDialogOpen(false)}
+                projectName={projet.titre}
+                onConfirm={handleDeleteProject}
+                isDeleting={isDeleting}
+            />
         </div>
     );
 }

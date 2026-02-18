@@ -148,6 +148,43 @@ Ce projet contient des diagrammes collaboratifs versionnés avec Git.
   }
 
   /**
+   * Vérifier si un dépôt GitHub existe et qui en est propriétaire
+   */
+  async getRepository(
+    accessToken: string,
+    owner: string,
+    repo: string,
+  ): Promise<{ exists: boolean; isOwner: boolean; currentOwner?: string } | null> {
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (response.status === 404) {
+      return { exists: false, isOwner: false };
+    }
+
+    if (!response.ok) {
+      this.logger.error(`Failed to get repository: ${response.statusText}`);
+      return null;
+    }
+
+    const repoData: GithubRepo = await response.json();
+    const user = await this.getGithubUser(accessToken);
+
+    return {
+      exists: true,
+      isOwner: repoData.owner.login === user.login,
+      currentOwner: repoData.owner.login,
+    };
+  }
+
+  /**
    * Supprimer un dépôt GitHub
    */
   async deleteRepository(

@@ -40,9 +40,39 @@ export class ProjetService {
     }
 
     const repoName = this.gitService.slugify(dto.titre);
+    const user = await this.gitService.getGithubUser(accessToken);
+    const owner = user.login;
 
     try {
-      const { owner, repo, url } = await this.gitService.createRepository(
+      // Vérifier si un projet PostgreSQL utilise déjà ce cheminGit
+      const existingProjet = await this.prisma.projet.findFirst({
+        where: { cheminGit: `${owner}/${repoName}` },
+      });
+
+      if (existingProjet) {
+        throw new BadRequestException(
+          `Un projet existe déjà avec ce dépôt GitHub (${owner}/${repoName}). Veuillez choisir un autre nom.`
+        );
+      }
+
+      // Vérifier si le repo existe sur GitHub
+      const repoInfo = await this.gitService.getRepository(accessToken, owner, repoName);
+
+      if (repoInfo?.exists) {
+        // Le repo existe déjà → REFUSER (pas d'import)
+        if (repoInfo.isOwner) {
+          throw new BadRequestException(
+            `Un dépôt GitHub "${repoName}" existe déjà dans votre compte. Veuillez choisir un autre nom ou supprimer le dépôt existant sur GitHub.`
+          );
+        } else {
+          throw new BadRequestException(
+            `Le dépôt "${repoName}" existe déjà et appartient à ${repoInfo.currentOwner}. Veuillez choisir un autre nom.`
+          );
+        }
+      }
+
+      // Le repo n'existe pas → CRÉATION
+      const { owner: createdOwner, repo: createdRepo, url } = await this.gitService.createRepository(
         accessToken,
         repoName,
         dto.description || '',
@@ -51,16 +81,17 @@ export class ProjetService {
 
       await this.gitService.createInitialReadme(
         accessToken,
-        owner,
-        repo,
+        createdOwner,
+        createdRepo,
         dto.titre,
       );
 
+      // Créer le projet dans PostgreSQL
       const projet = await this.prisma.projet.create({
         data: {
           titre: dto.titre.trim(),
           description: dto.description?.trim() || null,
-          cheminGit: `${owner}/${repo}`,
+          cheminGit: `${createdOwner}/${createdRepo}`,
           public: dto.public || false,
           idProprietaire: githubUser.id,
         },

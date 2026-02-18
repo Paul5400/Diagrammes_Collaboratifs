@@ -18,10 +18,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const baseMessage =
+    const exceptionResponse =
       exception instanceof HttpException
         ? exception.getResponse()
-        : ((exception as any)?.message ?? 'Internal server error');
+        : { message: 'Internal server error' };
+
+    // Extraire le message correctement
+    let message: string | string[];
+    if (typeof exceptionResponse === 'string') {
+      message = exceptionResponse;
+    } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+      message = (exceptionResponse as any).message || 'Erreur inconnue';
+    } else {
+      message = 'Erreur inconnue';
+    }
 
     // Log detailed error to help debug OAuth issues.
     // We avoid using Nest's logger so the output appears even before logger init.
@@ -41,7 +51,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: baseMessage,
+      message: message,
     });
   }
 }

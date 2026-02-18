@@ -26,6 +26,7 @@ interface CollaborativeEditorProps {
   onContentUpdate: (updatedContent: MermaidCode | undefined) => void;
   initialContentValue?: MermaidCode;
   currentDiagramType?: string;
+  currentUser?: { username?: string; avatarUrl?: string } | null;
   isReadOnly?: boolean;
 }
 
@@ -64,7 +65,8 @@ export const CollaborativeEditor = forwardRef<
   const collaborativeYjsHook = useYjs(
     currentSharedDocumentId,
     monacoEditorInstance,
-    initialContentFallbackValue
+    initialContentFallbackValue,
+    props.currentUser || undefined
   );
   // On récupère la fonction pour mettre à jour le contenu de manière simple
   const updateCollaborativeContent = collaborativeYjsHook.setContent;
@@ -88,49 +90,13 @@ export const CollaborativeEditor = forwardRef<
   );
 
   /**
-   * ÉVÉNEMENT : initializeMonacoEditor
-   * Appelé une seule fois quand l'éditeur Monaco est prêt dans le DOM.
+   * I. CONFIGURATION (WillMount)
+   * Appelé avant que l'éditeur ne soit créé. On y enregistre les langages et les thèmes.
    */
-  const initializeMonacoEditor = useCallback(
-    (editorInstance: editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
-      console.log(`[CollaborativeEditor] Montage de l'éditeur pour ${currentSharedDocumentId}`);
-      const monacoOptions: editor.IStandaloneEditorConstructionOptions = {
-        ...MONACO_EDITOR_CONFIGURATION_OPTIONS,
-        readOnly: isReadOnlyMode, // Applique le mode lecture seule si nécessaire
-      }; 
-
-      setMonacoEditorInstance(editorInstance);
-      setMonacoLibraryLibraryInstance(monacoInstance);
-      
-      // Applique les options immédiatement au chargement
-      editorInstance.updateOptions(monacoOptions);
-
-      // 1. Enregistrement du nouveau langage 'mermaid' dans Monaco
+  const handleEditorWillMount = useCallback((monacoInstance: Monaco) => {
+    // 1. Enregistrement du nouveau langage 'mermaid' (seulement s'il n'existe pas déjà)
+    if (!monacoInstance.languages.getLanguages().some((lang: any) => lang.id === 'mermaid')) {
       monacoInstance.languages.register({ id: 'mermaid' });
-
-      // Définition d'un thème personnalisé pour faciliter l'édition de fichiers
-      monacoInstance.editor.defineTheme('mermaid-dark', {
-        base: 'vs-dark',
-        inherit: true,
-        rules: [
-          { token: 'keyword.diagram', foreground: 'C586C0', fontStyle: 'bold' }, // Violet (Types de diagrammes)
-          { token: 'keyword.control', foreground: 'D87093', fontStyle: 'bold' }, // Rose (loop, alt, end, subgraph)
-          { token: 'keyword.command', foreground: '569CD6' },                   // Bleu (Commandes générales)
-          { token: 'type.keyword', foreground: '4EC9B0', fontStyle: 'italic' }, // Turquoise (participant, actor, class)
-          { token: 'type.marker', foreground: '4EC9B0' },                      // Turquoise (<<interface>>)
-          { token: 'operator.arrow', foreground: 'FFD700', fontStyle: 'bold' }, // Or (Flèches)
-          { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },      // Vert (Commentaires)
-          { token: 'string', foreground: 'CE9178' },                            // Orange (Textes)
-          { token: 'number', foreground: 'B5CEA8' },                            // Vert clair (Chiffres)
-          { token: 'variable', foreground: '9CDCFE' },                          // Bleu ciel (Identifiants)
-          { token: 'operator.separator', foreground: 'D4D4D4' },                // Gris clair
-          { token: 'bracket', foreground: 'FFD700' },                           // Or
-        ],
-        colors: {
-          'editor.background': '#0c0c0e',
-          'editorLineNumber.foreground': '#3b3b3f',
-        }
-      });
 
       // Configuration du tokenizer pour la coloration syntaxique
       monacoInstance.languages.setMonarchTokensProvider('mermaid', {
@@ -160,9 +126,9 @@ export const CollaborativeEditor = forwardRef<
         }
       });
 
-      // 2. Completion provider
+      // Completion provider
       monacoInstance.languages.registerCompletionItemProvider('mermaid', {
-        provideCompletionItems: (model, position) => {
+        provideCompletionItems: (model: any, position: any) => {
           const suggestions = MERMAID_KEYWORDS.map((keyword) => ({
             label: keyword,
             kind: monacoInstance.languages.CompletionItemKind.Keyword,
@@ -177,23 +143,64 @@ export const CollaborativeEditor = forwardRef<
           return { suggestions };
         },
       });
+    }
 
-      // 3. Écouteur de changements : on prévient le parent (DiagramEditor)
-      // nécessaire pour mettre à jour la prévisualisation SVG.
+    // 2. Définition du thème 'mermaid-dark'
+    monacoInstance.editor.defineTheme('mermaid-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'keyword.diagram', foreground: 'C586C0', fontStyle: 'bold' },
+        { token: 'keyword.control', foreground: 'D87093', fontStyle: 'bold' },
+        { token: 'keyword.command', foreground: '569CD6' },
+        { token: 'type.keyword', foreground: '4EC9B0', fontStyle: 'italic' },
+        { token: 'type.marker', foreground: '4EC9B0' },
+        { token: 'operator.arrow', foreground: 'FFD700', fontStyle: 'bold' },
+        { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
+        { token: 'string', foreground: 'CE9178' },
+        { token: 'number', foreground: 'B5CEA8' },
+        { token: 'variable', foreground: '9CDCFE' },
+        { token: 'operator.separator', foreground: 'D4D4D4' },
+        { token: 'bracket', foreground: 'FFD700' },
+      ],
+      colors: {
+        'editor.background': '#0c0c0e',
+        'editorLineNumber.foreground': '#3b3b3f',
+      }
+    });
+
+    // Applique le thème globalement par précaution
+    monacoInstance.editor.setTheme('mermaid-dark');
+  }, []);
+
+  /**
+   * II. INITIALISATION (OnMount)
+   * Appelé une seule fois quand l'éditeur Monaco est prêt dans le DOM.
+   */
+  const initializeMonacoEditor = useCallback(
+    (editorInstance: editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
+      console.log(`[CollaborativeEditor] Montage de l'éditeur pour ${currentSharedDocumentId}`);
+
+      setMonacoEditorInstance(editorInstance);
+      setMonacoLibraryLibraryInstance(monacoInstance);
+
+      // Force une mise à jour des options incluant le thème et lecture seule
+      editorInstance.updateOptions({
+        ...MONACO_EDITOR_CONFIGURATION_OPTIONS,
+        readOnly: isReadOnlyMode,
+        theme: 'mermaid-dark' as string,
+      });
+
+      // Écouteur de changements : on prévient le parent (DiagramEditor)
       editorInstance.onDidChangeModelContent(() => {
         const val = editorInstance.getValue();
         console.log(`[CollaborativeEditor] Changement détecté dans l'éditeur (${val.length} chars)`);
         onContentUpdateCallback(val);
       });
-
-      // 4. Configuration finale incluant le mode lecture seule
-      editorInstance.updateOptions({
-        ...MONACO_EDITOR_CONFIGURATION_OPTIONS,
-        readOnly: isReadOnlyMode,
-      });
     },
     [onContentUpdateCallback, currentSharedDocumentId, isReadOnlyMode]
   );
+
 
   return (
     <div className="flex-1 h-full border-r border-[var(--border-subtle)] bg-[#0c0c0e] flex flex-col">
@@ -211,6 +218,7 @@ export const CollaborativeEditor = forwardRef<
           height="100%"
           defaultLanguage="mermaid"
           theme="mermaid-dark"
+          beforeMount={handleEditorWillMount}
           onMount={initializeMonacoEditor}
           options={MONACO_EDITOR_CONFIGURATION_OPTIONS}
         />

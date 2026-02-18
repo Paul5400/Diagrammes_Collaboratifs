@@ -18,7 +18,23 @@ import { ExportDiagramDialog } from './ExportDiagramDialog';
  */
 const CollaborativeEditor = dynamic(
   () => import('./CollaborativeEditor').then((mod) => mod.CollaborativeEditor),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 h-full bg-[#0c0c0e] flex flex-col items-center justify-center p-8 space-y-4">
+        <div className="w-full h-8 skeleton mb-4 opacity-20 shimmer-wrapper">
+          <div className="shimmer" />
+        </div>
+        <div className="w-full flex-1 space-y-3 opacity-10">
+          {[...Array(20)].map((_, i) => (
+            <div key={i} className="h-3 w-full skeleton shimmer-wrapper" style={{ width: `${Math.random() * 40 + 60}%` }}>
+              <div className="shimmer" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
 );
 
 /**
@@ -61,6 +77,15 @@ export function DiagramEditor({ id, projectName, initialCode, isReadOnly = false
   const collaborativeMonacoEditorReference =
     useRef<CollaborativeEditorRef>(null);
 
+  /**
+   * ÉTAT : mermaidDiagramSourceCode
+   * Stocke le code texte actuel du diagramme pour la prévisualisation et l'export.
+   * Initialisé avec le code fourni ou une chaîne vide.
+   */
+  const [mermaidDiagramSourceCode, setMermaidDiagramSourceCode] =
+    useState<MermaidCode>(initialCode || '' as MermaidCode);
+
+
   const handleMonacoContentModification = useCallback(
     (updatedContent: MermaidCode | undefined) => {
       setMermaidDiagramSourceCode(updatedContent || '');
@@ -93,9 +118,10 @@ export function DiagramEditor({ id, projectName, initialCode, isReadOnly = false
         <section className="w-[45%] h-full flex flex-col border-r border-[var(--border-subtle)]">
           <CollaborativeEditor
             ref={collaborativeMonacoEditorReference}
-            sharedDocumentId={currentDiagramId}
+            sharedDocumentId={id}
             onContentUpdate={handleMonacoContentModification}
-            initialContentValue={initialCode || ''}
+            initialContentValue={initialCode || '' as MermaidCode}
+
             currentDiagramType={currentDiagramType}
             isReadOnly={isReadOnly}
           />

@@ -33,7 +33,7 @@ model Projet {
   idProprietaire   String   @map("id_proprietaire") @db.Uuid
   titre            String   @db.VarChar(150)
   description      String?  @db.Text
-  cheminGit        String?  @map("chemin_git") @db.VarChar(255)
+  cheminGit        String?  @unique @map("chemin_git") @db.VarChar(255)
   public           Boolean  @default(false)
   dateCreation     DateTime @default(now()) @map("date_creation") @db.Timestamp()
   dateModification DateTime @default(now()) @updatedAt @map("date_modification") @db.Timestamp()

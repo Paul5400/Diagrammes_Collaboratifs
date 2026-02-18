@@ -56,7 +56,7 @@ interface MermaidPreviewProps {
  * Responsable du rendu visuel du diagramme.
  * Gère également les interactions de Zoom et de Déplacement (Pan).
  */
-export function MermaidPreview(props: MermaidPreviewProps) {
+export const MermaidPreview = React.memo(function MermaidPreview(props: MermaidPreviewProps) {
   // On utilise useDeferredValue pour que React donne la priorité à la frappe de l'utilisateur
   // par rapport au rendu lourd du SVG Mermaid.
   const deferredMermaidSourceCode = useDeferredValue(props.mermaidCodeSource);
@@ -162,6 +162,7 @@ export function MermaidPreview(props: MermaidPreviewProps) {
             'radial-gradient(circle, var(--text-secondary) 1px, transparent 1px)',
           backgroundSize: '24px 24px',
           transform: `translate(${pan.x % 24}px, ${pan.y % 24}px)`,
+          willChange: 'transform',
         }}
       />
 
@@ -171,6 +172,7 @@ export function MermaidPreview(props: MermaidPreviewProps) {
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           transformOrigin: 'center center',
+          willChange: 'transform',
         }}
         dangerouslySetInnerHTML={{ __html: renderedSvgMarkupContent }}
       />
@@ -185,13 +187,13 @@ export function MermaidPreview(props: MermaidPreviewProps) {
       </div>
     </div>
   );
-}
+});
 
 /**
  * COMPOSANT INTERNE : ControlButton
  * Un bouton stylisé pour la barre d'outils
  */
-const ControlButton = ({
+const ControlButton = React.memo(({
   onClick,
   icon,
 }: {
@@ -200,14 +202,10 @@ const ControlButton = ({
 }) => (
   <button
     onClick={onClick}
-    className="p-2 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-white transition-all"
+    className="p-2 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-white transition-all active:scale-95"
   >
     {icon}
   </button>
-);
+));
 
-/**
- * COMPOSANT INTERNE : Divider
- * Simple séparateur vertical
- */
-const Divider = () => <div className="w-[1px] h-4 bg-[var(--border-subtle)]" />;
+const Divider = React.memo(() => <div className="w-[1px] h-4 bg-[var(--border-subtle)]" />);

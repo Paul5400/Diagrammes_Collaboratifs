@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap');
 @import 'tailwindcss';
 
 :root {
@@ -17,8 +16,8 @@
   --accent-glow: rgba(124, 58, 237, 0.4);
   --border-subtle: #27272a;
   --border-focus: #52525b;
-  --font-ui: 'Inter', sans-serif;
-  --font-code: 'JetBrains Mono', monospace;
+  --font-ui: var(--font-inter), sans-serif;
+  --font-code: var(--font-jetbrains), monospace;
 }
 
 html,
@@ -29,8 +28,8 @@ body {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,6 +46,66 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  animation: pageFadeIn 0.4s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skeletonPulse {
+  0% {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+
+  50% {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  100% {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+}
+
+.skeleton {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      transparent 100%);
+  animation: shimmer 1.5s infinite;
 }
 
 /* Buttons */

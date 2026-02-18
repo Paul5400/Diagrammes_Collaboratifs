@@ -145,6 +145,7 @@ export function EditorHeader(props: EditorHeaderProps) {
             </>
           )}
         </button>
+        <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />
 
         {props.onSaveClick && (
           <SaveButton
@@ -164,6 +165,7 @@ export function EditorHeader(props: EditorHeaderProps) {
             Historique
           </button>
         )}
+        <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />
 
         <button
           onClick={props.onExportClick}

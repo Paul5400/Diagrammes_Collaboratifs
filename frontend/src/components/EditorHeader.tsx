@@ -20,11 +20,13 @@ interface EditorHeaderProps {
   diagramType: string;
   onExportClick?: () => void;
   onSaveClick?: () => void;
+  onSaveAllClick?: () => void;
   onHistoryClick?: () => void;
   onDeleteProjectClick?: () => void;
   isSaving?: boolean;
   lastSaved?: Date | null;
   hasUnsavedChanges?: boolean;
+  canSave?: boolean;
 }
 
 export function EditorHeader(props: EditorHeaderProps) {
@@ -150,9 +152,11 @@ export function EditorHeader(props: EditorHeaderProps) {
         {props.onSaveClick && (
           <SaveButton
             onSave={props.onSaveClick}
+            onSaveAll={props.onSaveAllClick}
             isSaving={props.isSaving || false}
             lastSaved={props.lastSaved || null}
             hasUnsavedChanges={props.hasUnsavedChanges || false}
+            canSave={props.canSave ?? true}
           />
         )}
 

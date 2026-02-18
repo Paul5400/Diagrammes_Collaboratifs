@@ -1,6 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { Server } from '@hocuspocus/server';
-import { Redis } from '@hocuspocus/extension-redis';
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
@@ -23,120 +22,108 @@ export class CollabService implements OnModuleInit, OnModuleDestroy {
       name: 'diagram-collab-server',
       port: 3032, // Port interne du container relié pour websocket
 
-      // Extension Redis : Persiste les documents Yjs (sinon perdus au redémarrage)
-      extensions: [
-        new Redis({
-          // On réutilise la connexion Redis
-          host: process.env.REDIS_HOST || 'redis',
-          port: Number(process.env.REDIS_PORT) || 6379,
-          prefix: 'hocuspocus:',
-        }),
-      ],
-
       onConnect() {
         return new Promise((resolve) => {
           console.log('[Hocuspocus] Nouveau client connecté');
           resolve(null);
         });
       },
+      
       onDisconnect() {
         console.log('[Hocuspocus] Client déconnecté');
         return Promise.resolve();
       },
 
-      // Timeout 100ms pour éviter race conditions Redis
+      // Charger le document depuis Redis ou GitHub
       onLoadDocument: async (data) => {
         console.log(`[Hocuspocus] Chargement de ${data.documentName}`);
 
+        const redisService = this.redisService;
         const prisma = this.prisma;
         const userService = this.userService;
 
-        // Timeout 100ms pour laisser Redis charger asynchroniquement
-        return new Promise((resolve) => {
-          setTimeout(async () => {
-            const type = data.document.getText('monaco_content');
-            const currentContent = type.toString();
+        // Essayer de charger depuis Redis d'abord
+        const redisKey = `yjs:${data.documentName}`;
+        const redisContent = await redisService.get(redisKey);
 
-            console.log(`[Hocuspocus] Contenu actuel : "${currentContent.substring(0, 50)}..." (${currentContent.length} chars)`);
+        if (redisContent) {
+          console.log(`[Hocuspocus] Chargé depuis Redis (${redisContent.length} chars)`);
+          const type = data.document.getText('monaco_content');
+          type.insert(0, redisContent);
+          return;
+        }
 
-            // Si déjà en Redis, ne rien faire
-            if (currentContent.trim() === '') {
-              const diagramId = data.documentName.replace('diagram-', '');
-              console.log(`[Hocuspocus] Document vide, tentative de chargement pour ${diagramId}`);
+        // Redis vide, charger depuis GitHub/DB
+        console.log(`[Hocuspocus] Redis vide, chargement depuis GitHub/DB`);
+        const diagramId = data.documentName.replace('diagram-', '');
 
-              if (diagramId && diagramId.length === 36) { // Format UUID
-                try {
-                  const diagramme = await prisma.diagramme.findUnique({
-                    where: { id: diagramId },
-                    include: { 
-                      projet: { 
-                        include: { 
-                          proprietaire: true 
-                        } 
-                      } 
-                    },
-                  });
+        if (diagramId && diagramId.length === 36) {
+          try {
+            const diagramme = await prisma.diagramme.findUnique({
+              where: { id: diagramId },
+              include: { projet: { include: { proprietaire: true } } },
+            });
 
-                  if (!diagramme) {
-                    console.log(`[Hocuspocus] Diagramme ${diagramId} introuvable en DB`);
-                    resolve(data.context);
-                    return;
-                  }
-
-                  if (diagramme.cheminGit && diagramme.projet?.cheminGit) {
-                    try {
-                      const githubId = diagramme.projet.proprietaire.githubId;
-                      const accessToken = await userService.getGithubAccessToken(githubId);
-
-                      if (accessToken) {
-                        const [owner, repo] = diagramme.projet.cheminGit.split('/');
-                        
-                        const response = await fetch(
-                          `https://api.github.com/repos/${owner}/${repo}/contents/${diagramme.cheminGit}`,
-                          {
-                            headers: {
-                              Authorization: `Bearer ${accessToken}`,
-                              'Content-Type': 'application/json',
-                            },
-                          },
-                        );
-
-                        if (response.ok) {
-                          const fileData: any = await response.json();
-                          const githubContent = Buffer.from(fileData.content, 'base64').toString('utf-8');
-                          
-                          console.log(`[Hocuspocus] Contenu chargé depuis GitHub (${githubContent.length} chars)`);
-                          type.insert(0, githubContent);
-                          resolve(data.context);
-                          return;
-                        } else {
-                          console.log(`[Hocuspocus] Fichier GitHub non trouvé (${response.status}), fallback...`);
-                        }
-                      } else {
-                        console.log(`[Hocuspocus] Token GitHub non disponible, fallback...`);
-                      }
-                    } catch (error) {
-                      console.warn(`[Hocuspocus] Erreur chargement GitHub: ${error.message}, fallback...`);
-                    }
-                  }
-
-                  if (diagramme.contenu) {
-                    console.log(`[Hocuspocus] Contenu chargé depuis PostgreSQL legacy (${diagramme.contenu.length} chars)`);
-                    type.insert(0, diagramme.contenu);
-                  } else {
-                    console.log(`[Hocuspocus] Aucun contenu trouvé pour ${diagramId} (nouveau diagramme)`);
-                  }
-                } catch (error) {
-                  console.error(`[Hocuspocus] Erreur lors du chargement: ${error.message}`);
-                }
-              }
-            } else {
-              console.log(`[Hocuspocus] Document existant chargé depuis Redis (${currentContent.length} chars)`);
+            if (!diagramme) {
+              console.log(`[Hocuspocus] Diagramme introuvable`);
+              return;
             }
 
-            resolve(data.context);
-          }, 100);
-        });
+            let loadedContent = '';
+
+            // Charger depuis GitHub si disponible
+            if (diagramme.cheminGit && diagramme.projet?.cheminGit) {
+              try {
+                const githubId = diagramme.projet.proprietaire.githubId;
+                const accessToken = await userService.getGithubAccessToken(githubId);
+
+                if (accessToken) {
+                  const [owner, repo] = diagramme.projet.cheminGit.split('/');
+                  const response = await fetch(
+                    `https://api.github.com/repos/${owner}/${repo}/contents/${diagramme.cheminGit}`,
+                    { headers: { Authorization: `Bearer ${accessToken}` } },
+                  );
+
+                  if (response.ok) {
+                    const fileData: any = await response.json();
+                    loadedContent = Buffer.from(fileData.content, 'base64').toString('utf-8');
+                    console.log(`[Hocuspocus] Chargé depuis GitHub (${loadedContent.length} chars)`);
+                  }
+                }
+              } catch (error) {
+                console.warn(`[Hocuspocus] Erreur GitHub: ${error.message}`);
+              }
+            }
+
+            // Fallback PostgreSQL
+            if (!loadedContent && diagramme.contenu) {
+              loadedContent = diagramme.contenu;
+              console.log(`[Hocuspocus] Chargé depuis PostgreSQL (${loadedContent.length} chars)`);
+            }
+
+            // Insérer dans Yjs et sauvegarder dans Redis
+            if (loadedContent) {
+              const type = data.document.getText('monaco_content');
+              type.insert(0, loadedContent);
+              await redisService.set(redisKey, loadedContent);
+              console.log(`[Hocuspocus] Contenu sauvegardé dans Redis`);
+            }
+          } catch (error) {
+            console.error(`[Hocuspocus] Erreur: ${error.message}`);
+          }
+        }
+      },
+
+      // Sauvegarder le document dans Redis à chaque modification
+      onStoreDocument: async (data) => {
+        const redisKey = `yjs:${data.documentName}`;
+        const type = data.document.getText('monaco_content');
+        const content = type.toString();
+
+        if (content.trim()) {
+          await this.redisService.set(redisKey, content);
+          console.log(`[Hocuspocus] Sauvegardé dans Redis: ${data.documentName} (${content.length} chars)`);
+        }
       },
     });
 

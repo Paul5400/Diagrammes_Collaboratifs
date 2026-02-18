@@ -66,21 +66,38 @@ export function ExportDiagramDialog({
                     return;
                 }
 
-                // Get the natural dimensions from the image
-                // Use fallback if 0 (though Mermaid usually sets it)
-                const width = img.width || 800;
-                const height = img.height || 600;
+                // Get dimensions from SVG attributes or viewBox for more reliability
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+                const svgElement = svgDoc.querySelector('svg');
 
-                const scale = 3; // Higher quality export
+                let width = img.width || 800;
+                let height = img.height || 600;
+
+                if (svgElement) {
+                    const viewBox = svgElement.viewBox.baseVal;
+                    if (viewBox && viewBox.width && viewBox.height) {
+                        width = viewBox.width;
+                        height = viewBox.height;
+                    } else {
+                        // Fallback to attributes if viewBox is missing
+                        const attrWidth = parseFloat(svgElement.getAttribute('width') || '0');
+                        const attrHeight = parseFloat(svgElement.getAttribute('height') || '0');
+                        if (attrWidth > 0) width = attrWidth;
+                        if (attrHeight > 0) height = attrHeight;
+                    }
+                }
+
+                const scale = 2; // Reduced to 2 for better compatibility with huge diagrams
                 canvas.width = width * scale;
                 canvas.height = height * scale;
 
-                // Dark background to match the diagram theme (otherwise white text/arrows on white bg are invisible)
+                // Dark background
                 ctx.fillStyle = '#161618';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 ctx.scale(scale, scale);
-                ctx.drawImage(img, 0, 0);
+                ctx.drawImage(img, 0, 0, width, height);
 
                 const pngUrl = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
@@ -143,12 +160,11 @@ export function ExportDiagramDialog({
                 <div className="p-6">
                     {activeTab === 'png' ? (
                         <div className="space-y-4">
-                            <div className="p-8 border border-[var(--border-subtle)] rounded-lg bg-[#1a1a1d] flex items-center justify-center min-h-[300px]">
+                            <div className="h-[400px] relative border border-[var(--border-subtle)] rounded-lg bg-[#1a1a1d] overflow-hidden">
                                 {svgContent ? (
                                     <div
-                                        className="w-full h-full max-h-[500px] overflow-hidden flex items-center justify-center transition-all"
+                                        className="absolute inset-6 flex items-center justify-center transition-all [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto [&>svg]:block [&>svg]:mx-auto"
                                         dangerouslySetInnerHTML={{ __html: svgContent }}
-                                        style={{ transform: 'scale(0.85)' }} // Bigger preview
                                     />
                                 ) : (
                                     <span className="text-[var(--text-secondary)]">Génération de l'aperçu...</span>

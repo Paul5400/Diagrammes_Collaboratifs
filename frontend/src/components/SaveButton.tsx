@@ -12,12 +12,12 @@ interface SaveButtonProps {
 function timeAgo(date: Date): string {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
   
-  if (seconds < 60) return `il y a ${seconds}s`;
+  if (seconds < 60) return `Modifié il y a ${seconds}s`;
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `il y a ${minutes}min`;
+  if (minutes < 60) return `Modifié il y a ${minutes}min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `il y a ${hours}h`;
-  return `il y a ${Math.floor(hours / 24)}j`;
+  if (hours < 24) return `Modifié il y a ${hours}h`;
+  return `Modifié il y a ${Math.floor(hours / 24)}j`;
 }
 
 export function SaveButton({ onSave, isSaving, lastSaved, hasUnsavedChanges }: SaveButtonProps) {

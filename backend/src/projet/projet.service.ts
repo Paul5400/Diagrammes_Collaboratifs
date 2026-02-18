@@ -98,6 +98,29 @@ export class ProjetService {
   }
 
   /**
+   * Récupérer un projet publique (sans vérification owner) avec diagrammes
+   */
+  async findOnePublic(id: string): Promise<any> {
+    const projet = await this.prisma.projet.findUnique({
+      where: { id },
+      include: {
+        diagrammes: {
+          orderBy: { dateModification: 'desc' },
+        },
+      },
+    });
+
+    if (!projet) {
+      throw new NotFoundException('Projet introuvable');
+    }
+
+    // Ici on pourrait vérifier projet.public === true si on voulait restreindre
+    // Mais pour l'instant l'utilisateur veut juste partager via lien
+    
+    return projet;
+  }
+
+  /**
    * Récupérer un projet spécifique
    */
   async findOne(projetId: string, githubId: string): Promise<Projet> {

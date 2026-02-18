@@ -54,6 +54,10 @@ interface DiagramEditorProps {
  * Composant racine de l'espace de travail éditeur + preview.
  */
 export function DiagramEditor({ id, projectName, initialCode, isReadOnly = false }: DiagramEditorProps) {
+  const currentDiagramId = id;
+  
+  const [mermaidDiagramSourceCode, setMermaidDiagramSourceCode] =
+    useState<MermaidCode>(initialCode || '');
 
   const authenticationContext = useAuth();
   const authenticatedUserInstance = authenticationContext.user;

@@ -18,7 +18,6 @@ import { CreateDiagrammeDto } from '../diagram/dto/create-diagramme.dto';
 import type { FastifyRequest } from 'fastify';
 
 @Controller('projets')
-@UseGuards(AuthGuard('jwt'))
 export class ProjetController {
   constructor(
     private readonly projetService: ProjetService,
@@ -26,10 +25,21 @@ export class ProjetController {
   ) { }
 
   /**
+   * GET /projets/:id/public
+   * Récupérer un projet publique (Lecture seule)
+   * Pas de Guard JWT ici
+   */
+  @Get(':id/public')
+  async findOnePublic(@Param('id') id: string) {
+     return this.projetService.findOnePublic(id);
+  }
+
+  /**
    * POST /projets
    * Créer un nouveau projet + dépôt GitHub
    */
   @Post()
+  @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.CREATED)
   async create(@Req() req: FastifyRequest, @Body() dto: CreateProjetDto) {
     const githubId = (req as any).user?.sub;
@@ -41,6 +51,7 @@ export class ProjetController {
    * Récupérer tous les projets de l'utilisateur connecté
    */
   @Get()
+  @UseGuards(AuthGuard('jwt'))
   async findAll(@Req() req: FastifyRequest) {
     const githubId = (req as any).user?.sub;
     return this.projetService.findAllByUser(githubId);
@@ -51,6 +62,7 @@ export class ProjetController {
    * Récupérer un projet spécifique
    */
   @Get(':id')
+  @UseGuards(AuthGuard('jwt'))
   async findOne(@Req() req: FastifyRequest, @Param('id') id: string) {
     const githubId = (req as any).user?.sub;
     return this.projetService.findOne(id, githubId);
@@ -61,6 +73,7 @@ export class ProjetController {
    * Supprimer un projet + dépôt GitHub
    */
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Req() req: FastifyRequest, @Param('id') id: string) {
     const githubId = (req as any).user?.sub;
@@ -72,6 +85,7 @@ export class ProjetController {
    * Sauvegarder tous les diagrammes du projet vers GitHub
    */
   @Post(':id/save')
+  @UseGuards(AuthGuard('jwt'))
   async save(@Req() req: FastifyRequest, @Param('id') id: string) {
     const githubId = (req as any).user?.sub;
     return this.projetService.saveDiagramsToGithub(id, githubId);
@@ -86,6 +100,7 @@ export class ProjetController {
    * Créer un diagramme dans un projet
    */
   @Post(':id/diagrammes')
+  @UseGuards(AuthGuard('jwt'))
   @HttpCode(HttpStatus.CREATED)
   async createDiagramme(
     @Req() req: FastifyRequest,
@@ -101,6 +116,7 @@ export class ProjetController {
    * Récupérer tous les diagrammes d'un projet
    */
   @Get(':id/diagrammes')
+  @UseGuards(AuthGuard('jwt'))
   async findAllDiagrammes(
     @Req() req: FastifyRequest,
     @Param('id') projetId: string,

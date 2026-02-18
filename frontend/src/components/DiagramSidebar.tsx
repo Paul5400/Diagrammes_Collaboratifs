@@ -12,9 +12,10 @@ interface DiagrammeItem {
 interface DiagramSidebarProps {
     diagrammes: DiagrammeItem[];
     selectedId: string | null;
+    isReadOnly?: boolean;
     onSelect: (id: string) => void;
-    onDelete: (id: string, e: React.MouseEvent) => void;
-    onCreateClick: () => void;
+    onDelete?: (id: string, e: React.MouseEvent) => void;
+    onCreateClick?: () => void;
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -28,7 +29,7 @@ const TYPE_ICONS: Record<string, string> = {
     autre: '📄',
 };
 
-export function DiagramSidebar({ diagrammes, selectedId, onSelect, onDelete, onCreateClick }: DiagramSidebarProps) {
+export function DiagramSidebar({ diagrammes, selectedId, isReadOnly = false, onSelect, onDelete, onCreateClick }: DiagramSidebarProps) {
     return (
         <div className="w-64 min-w-[220px] h-full bg-[#0c0c0e] border-r border-[var(--border-subtle)] flex flex-col">
             {/* Header */}
@@ -36,13 +37,15 @@ export function DiagramSidebar({ diagrammes, selectedId, onSelect, onDelete, onC
                 <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                     Diagrammes
                 </span>
-                <button
-                    onClick={onCreateClick}
-                    className="p-1.5 rounded-md hover:bg-[var(--bg-hover)] text-zinc-500 hover:text-white transition-colors"
-                    title="Nouveau diagramme"
-                >
-                    <Plus size={14} />
-                </button>
+                {!isReadOnly && onCreateClick && (
+                    <button
+                        onClick={onCreateClick}
+                        className="p-1.5 rounded-md hover:bg-[var(--bg-hover)] text-zinc-500 hover:text-white transition-colors"
+                        title="Nouveau diagramme"
+                    >
+                        <Plus size={14} />
+                    </button>
+                )}
             </div>
 
             {/* List */}
@@ -72,6 +75,7 @@ export function DiagramSidebar({ diagrammes, selectedId, onSelect, onDelete, onC
                             </span>
                         </button>
 
+                        {!isReadOnly && onDelete && (
                         <button
                             onClick={(e) => onDelete(diag.id, e)}
                             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition-all"
@@ -79,6 +83,7 @@ export function DiagramSidebar({ diagrammes, selectedId, onSelect, onDelete, onC
                         >
                             <Trash2 size={12} />
                         </button>
+                        )}
                     </div>
                 ))}
             </div>

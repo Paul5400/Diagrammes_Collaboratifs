@@ -28,7 +28,7 @@ export class DiagrammeService {
     private async verifyProjetAccess(projetId: string, githubId: string) {
         const githubUser = await this.userService.findByGithubId(githubId);
         if (!githubUser) {
-            throw new NotFoundException('Utilisateur introuvable');
+            throw new NotFoundException('Utilisateur introuvable. Votre session a peut-être expiré.');
         }
 
         const projet = await this.prisma.projet.findUnique({
@@ -36,11 +36,11 @@ export class DiagrammeService {
         });
 
         if (!projet) {
-            throw new NotFoundException('Projet introuvable');
+            throw new NotFoundException('Ce projet n\'existe pas ou a été supprimé.');
         }
 
         if (projet.idProprietaire !== githubUser.id) {
-            throw new ForbiddenException("Vous n'avez pas accès à ce projet");
+            throw new ForbiddenException('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
 
         return { githubUser, projet };
@@ -199,7 +199,7 @@ export class DiagrammeService {
     > {
         const githubUser = await this.userService.findByGithubId(githubId);
         if (!githubUser) {
-            throw new NotFoundException('Utilisateur introuvable');
+            throw new NotFoundException('Utilisateur introuvable. Votre session a peut-être expiré.');
         }
 
         const diagramme = await this.prisma.diagramme.findUnique({
@@ -208,11 +208,11 @@ export class DiagrammeService {
         });
 
         if (!diagramme) {
-            throw new NotFoundException('Diagramme introuvable');
+            throw new NotFoundException('Ce diagramme n\'existe pas ou a été supprimé.');
         }
 
-        if (diagramme.projet?.idProprietaire !== githubUser.id) {
-            throw new ForbiddenException("Vous n'avez pas accès à ce diagramme");
+        if (diagramme.idProprietaire !== githubUser.id) {
+            throw new ForbiddenException('Vous n\'avez pas les droits pour accéder à ce diagramme.');
         }
 
         if (!diagramme.cheminGit) {

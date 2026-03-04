@@ -316,6 +316,69 @@ Ce projet contient des diagrammes collaboratifs versionnés avec Git.
   }
 
   /**
+   * Inviter un collaborateur sur un dépôt GitHub
+   * Retourne l'ID de l'invitation (201) ou null si déjà collaborateur (204)
+   */
+  async inviterCollaborateur(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    username: string,
+    permission: 'pull' | 'push' | 'admin' = 'push',
+  ): Promise<number | null> {
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}/collaborators/${username}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ permission }),
+      },
+    );
+
+    // 204 = déjà collaborateur, aucune invitation nécessaire
+    if (response.status === 204) {
+      this.logger.log(`${username} est déjà collaborateur de ${owner}/${repo}`);
+      return null;
+    }
+
+    if (response.status !== 201) {
+      const error = await response.json().catch(() => ({}));
+      this.logger.error(`Failed to invite collaborator: ${JSON.stringify(error)}`);
+      throw new BadRequestException("Impossible d'inviter le collaborateur sur le dépôt GitHub");
+    }
+
+    const data = await response.json();
+    this.logger.log(`Invitation envoyée à ${username} pour ${owner}/${repo} (id: ${data.id})`);
+    return data.id as number;
+  }
+
+  /**
+   * Accepter automatiquement une invitation à un dépôt GitHub
+   */
+  async accepterInvitation(accessToken: string, invitationId: number): Promise<void> {
+    const response = await fetch(
+      `${this.GITHUB_API}/user/repository_invitations/${invitationId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      this.logger.error(`Failed to accept invitation ${invitationId}: ${response.statusText}`);
+      throw new BadRequestException("Impossible d'accepter l'invitation au dépôt GitHub");
+    }
+
+    this.logger.log(`Invitation ${invitationId} acceptée automatiquement`);
+  }
+
+  /**
    * Slugifier un titre pour créer un nom de dépôt valide
    */
   slugify(text: string): string {

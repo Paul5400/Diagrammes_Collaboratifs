@@ -61,6 +61,25 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [accessDenied, setAccessDenied] = useState(false);
     const [requestSent, setRequestSent] = useState(false);
     const [requestLoading, setRequestLoading] = useState(false);
+    const [inviteToken, setInviteToken] = useState<string | null>(null);
+    const [joinSuccess, setJoinSuccess] = useState(false);
+    const [joinError, setJoinError] = useState<string | null>(null);
+
+    // Détecter le paramètre ?invite=TOKEN dans l'URL
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            setInviteToken(params.get('invite'));
+        }
+    }, []);
+
+    // Si lien d'invitation + accès refusé : rejoindre directement
+    useEffect(() => {
+        if (accessDenied && inviteToken && !requestLoading && !joinSuccess && !joinError) {
+            handleJoinWithInvite(inviteToken);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [accessDenied, inviteToken]);
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
 
@@ -198,6 +217,41 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         setCurrentSvgContent(svg);
     }, []);
 
+    // Rejoindre via lien d'invitation direct (sans approbation)
+    const handleJoinWithInvite = async (token: string) => {
+        setRequestLoading(true);
+        setJoinError(null);
+        try {
+            const jwt = Cookies.get('diagrammer_token');
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_BACKEND_URL}/demandes-acces/rejoindre`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${jwt}`,
+                    },
+                    body: JSON.stringify({ inviteToken: token }),
+                },
+            );
+
+            if (response.ok) {
+                setJoinSuccess(true);
+                // Recharger la page après 1.5s - l'utilisateur a maintenant accès
+                setTimeout(() => {
+                    window.location.href = window.location.pathname;
+                }, 1500);
+            } else {
+                const data = await response.json().catch(() => ({}));
+                setJoinError(data.message || "Lien d'invitation invalide ou expiré");
+            }
+        } catch {
+            setJoinError('Erreur de connexion');
+        } finally {
+            setRequestLoading(false);
+        }
+    };
+
     const handleRequestAccess = async () => {
         if (!projetId) return;
         setRequestLoading(true);
@@ -241,6 +295,49 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     }
 
     if (accessDenied) {
+        // Cas 1 : lien d'invitation direct
+        if (inviteToken) {
+            return (
+                <div className="h-screen w-screen flex flex-col items-center justify-center bg-[var(--bg-page)] text-white gap-6">
+                    {requestLoading && !joinSuccess && !joinError && (
+                        <>
+                            <Loader2 size={40} className="animate-spin text-[var(--accent-primary)]" />
+                            <p className="text-zinc-400 text-sm">Vous rejoignez le projet…</p>
+                        </>
+                    )}
+                    {joinSuccess && (
+                        <>
+                            <div className="p-4 bg-green-500/10 rounded-full border border-green-500/20">
+                                <Check size={48} className="text-green-400" />
+                            </div>
+                            <div className="text-center space-y-2">
+                                <h1 className="text-2xl font-bold">Vous avez rejoint le projet !</h1>
+                                <p className="text-zinc-400 text-sm">Redirection en cours…</p>
+                            </div>
+                        </>
+                    )}
+                    {joinError && (
+                        <>
+                            <div className="p-4 bg-red-500/10 rounded-full border border-red-500/20">
+                                <Lock size={48} className="text-red-500" />
+                            </div>
+                            <div className="text-center space-y-2">
+                                <h1 className="text-2xl font-bold">Lien invalide</h1>
+                                <p className="text-zinc-400 max-w-md">{joinError}</p>
+                            </div>
+                            <button
+                                onClick={() => router.push('/dashboard')}
+                                className="text-sm text-zinc-500 hover:text-white transition-colors mt-2"
+                            >
+                                Retour au tableau de bord
+                            </button>
+                        </>
+                    )}
+                </div>
+            );
+        }
+
+        // Cas 2 : accès refusé sans lien d'invitation
         return (
             <div className="h-screen w-screen flex flex-col items-center justify-center bg-[var(--bg-page)] text-white gap-6">
                 <div className="p-4 bg-red-500/10 rounded-full border border-red-500/20">
@@ -254,20 +351,29 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                     </p>
                 </div>
                 
+                {requestLoading && !requestSent && (
+                    <div className="flex items-center gap-2 px-6 py-3 text-zinc-400">
+                        <Loader2 size={18} className="animate-spin" />
+                        <span className="text-sm">Envoi en cours...</span>
+                    </div>
+                )}
+
                 {requestSent ? (
                     <div className="flex items-center gap-2 px-6 py-3 bg-green-500/10 text-green-500 rounded-md border border-green-500/20">
                         <Check size={20} />
                         <span>Demande envoyée avec succès</span>
                     </div>
                 ) : (
-                    <button 
-                        onClick={handleRequestAccess}
-                        disabled={requestLoading}
-                        className="px-6 py-3 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white font-medium rounded-md transition-colors disabled:opacity-50 flex items-center gap-2"
-                    >
-                        {requestLoading && <Loader2 size={18} className="animate-spin" />}
-                        Demander l'accès
-                    </button>
+                    !requestLoading && (
+                        <button 
+                            onClick={handleRequestAccess}
+                            disabled={requestLoading}
+                            className="px-6 py-3 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white font-medium rounded-md transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {requestLoading && <Loader2 size={18} className="animate-spin" />}
+                            Demander l'accès
+                        </button>
+                    )
                 )}
                 
                 <button 
@@ -290,6 +396,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             {/* Header */}
             <EditorHeader
                 projectTitleLabel={projet.titre}
+                projetId={projetId ?? undefined}
                 currentUserData={user}
                 diagramType={currentDiagramType}
                 onExportClick={() => setIsExportDialogOpen(true)}

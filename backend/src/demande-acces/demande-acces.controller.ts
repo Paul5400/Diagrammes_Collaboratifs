@@ -21,8 +21,27 @@ export class DemandeAccesController {
   @Post('check-github-invitations')
   async checkGithubInvitations(@Req() req: FastifyRequest) {
     const user = (req as any).user;
-    // user.sub doit contenir le githubId selon auth.service
     return this.demandeAccesService.verifierEtAccepterInvitationsGitHub(user.sub);
+  }
+
+  /** Génère un token JWT signé valable 7 jours pour inviter quelqu'un sur un projet */
+  @Post('invite-token')
+  async generateInviteToken(
+    @Req() req: FastifyRequest,
+    @Body() body: { projetId: string },
+  ) {
+    const userId = (req as any).user?.sub;
+    return this.demandeAccesService.generateInviteToken(userId, body.projetId);
+  }
+
+  /** Rejoindre directement un projet via un lien d'invitation signé */
+  @Post('rejoindre')
+  async rejoindre(
+    @Req() req: FastifyRequest,
+    @Body() body: { inviteToken: string },
+  ) {
+    const userId = (req as any).user?.sub;
+    return this.demandeAccesService.rejoindreSurInvitation(userId, body.inviteToken);
   }
 
   @Post()

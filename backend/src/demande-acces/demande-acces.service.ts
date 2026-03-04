@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
 import { GitService } from '../git/git.service';
@@ -19,6 +20,7 @@ export class DemandeAccesService {
       private readonly prisma: PrismaService,
       private readonly userService: UserService,
       private readonly gitService: GitService,
+      private readonly jwtService: JwtService,
   ) {}
 
   /**
@@ -34,9 +36,8 @@ export class DemandeAccesService {
 
   async create(githubId: string, dto: CreateDemandeAccesDto) {
     const user = await this.getInternalUser(githubId);
-    const userId = user.id; // UUID interne
+    const userId = user.id;
     const { projetId } = dto;
-    // ... existing method create ...
 
     // 1. Vérifier si le projet existe
     const projet = await this.prisma.projet.findUnique({
@@ -131,8 +132,7 @@ export class DemandeAccesService {
 
   async findAllByOwner(githubId: string) {
     const user = await this.getInternalUser(githubId);
-    
-    // Récupérer les demandes pour les projets dont je suis propriétaire
+
     return this.prisma.demandeAcces.findMany({
       where: {
         projet: {
@@ -246,6 +246,124 @@ export class DemandeAccesService {
     }
 
     return demandeUpdated;
+  }
+
+  /**
+   * Génère un token JWT signé valable 7 jours permettant à n'importe quel
+   * utilisateur connecté d'envoyer une demande d'accès sur ce projet.
+   * Seul le propriétaire ou un collaborateur peut générer ce token.
+   */
+  async generateInviteToken(
+    githubId: string,
+    projetId: string,
+  ): Promise<{ token: string }> {
+    const user = await this.getInternalUser(githubId);
+
+    const projet = await this.prisma.projet.findUnique({ where: { id: projetId } });
+    if (!projet) throw new NotFoundException('Projet introuvable');
+
+    const isOwner = projet.idProprietaire === user.id;
+    if (!isOwner) {
+      const collab = await this.prisma.collaboration.findUnique({
+        where: {
+          unique_utilisateur_projet: { idUtilisateur: user.id, idProjet: projetId },
+        },
+      });
+      if (!collab) throw new ForbiddenException("Vous n'avez pas accès à ce projet");
+    }
+
+    const token = this.jwtService.sign(
+      { projetId, type: 'direct-invite', ownerGithubId: githubId },
+      { expiresIn: '7d' },
+    );
+
+    this.logger.log(`Token d'invitation directe généré pour le projet ${projetId} par ${githubId}`);
+    return { token };
+  }
+
+  /**
+   * Rejoindre directement un projet via un lien d'invitation signé.
+   * Ajoute l'utilisateur en tant que collaborateur (BDD + GitHub) sans approbation manuelle.
+   */
+  async rejoindreSurInvitation(githubId: string, inviteToken: string): Promise<{ projetId: string; titre: string }> {
+    // 1. Vérifier la signature JWT
+    let payload: { projetId: string; type: string; ownerGithubId: string };
+    try {
+      payload = this.jwtService.verify(inviteToken);
+    } catch {
+      throw new ForbiddenException("Lien d'invitation invalide ou expiré");
+    }
+
+    if (payload.type !== 'direct-invite') {
+      throw new ForbiddenException("Type de token invalide");
+    }
+
+    const { projetId, ownerGithubId } = payload;
+
+    // 2. Récupérer l'utilisateur qui rejoint
+    const user = await this.getInternalUser(githubId);
+
+    // 3. Récupérer le projet
+    const projet = await this.prisma.projet.findUnique({ where: { id: projetId } });
+    if (!projet) throw new NotFoundException('Projet introuvable');
+
+    // 4. Vérifier qu'il n'est pas déjà membre
+    if (projet.idProprietaire === user.id) {
+      return { projetId, titre: projet.titre }; // Déjà propriétaire, rediriger quand même
+    }
+
+    const existingCollab = await this.prisma.collaboration.findUnique({
+      where: { unique_utilisateur_projet: { idUtilisateur: user.id, idProjet: projetId } },
+    });
+    if (existingCollab) {
+      return { projetId, titre: projet.titre }; // Déjà collaborateur, rediriger quand même
+    }
+
+    // 5. Créer la collaboration en BDD
+    await this.prisma.collaboration.create({
+      data: {
+        idUtilisateur: user.id,
+        idProjet: projetId,
+        droit: Droit.ecriture,
+      },
+    });
+
+    // 6. Ajouter au dépôt GitHub
+    if (projet.cheminGit && user.username) {
+      const [repoOwner, repoName] = projet.cheminGit.split('/');
+      const ownerToken = await this.userService.getGithubAccessToken(ownerGithubId);
+      if (ownerToken) {
+        try {
+          const invitationId = await this.gitService.inviterCollaborateur(
+            ownerToken, repoOwner, repoName, user.username,
+          );
+          if (invitationId !== null) {
+            const userToken = await this.userService.getGithubAccessToken(githubId);
+            if (userToken) {
+              await this.gitService.accepterInvitation(userToken, invitationId);
+              this.logger.log(`${user.username} ajouté directement au dépôt ${projet.cheminGit}`);
+            }
+          }
+        } catch (e) {
+          this.logger.warn(`Ajout GitHub échoué (non bloquant) : ${e.message}`);
+        }
+      }
+    }
+
+    // 7. Notifier le propriétaire
+    const owner = await this.getInternalUser(ownerGithubId);
+    const joinerName = user.username || user.email || 'Un utilisateur';
+    await this.prisma.notification.create({
+      data: {
+        idUtilisateur: owner.id,
+        type: 'acces_accepte',
+        message: `${joinerName} a rejoint votre projet "${projet.titre}" via un lien d'invitation.`,
+        data: JSON.stringify({ projetId }),
+      },
+    });
+
+    this.logger.log(`${githubId} a rejoint le projet ${projetId} via invitation directe`);
+    return { projetId, titre: projet.titre };
   }
 
   async refuserDemande(demandeId: string, githubId: string) {

@@ -3,17 +3,22 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserService } from '../user/user.service';
+import { GitService } from '../git/git.service';
 import { CreateDemandeAccesDto } from './dto/create-demande-acces.dto';
 import { Droit, StatutDemande } from '@prisma/client';
 
 @Injectable()
 export class DemandeAccesService {
+  private readonly logger = new Logger(DemandeAccesService.name);
+
   constructor(
       private readonly prisma: PrismaService,
       private readonly userService: UserService,
+      private readonly gitService: GitService,
   ) {}
 
   /**
@@ -191,6 +196,54 @@ export class DemandeAccesService {
         data: JSON.stringify({ projetId: demande.idProjet }),
       },
     });
+
+    // 6. Ajouter le collaborateur au dépôt GitHub si le projet en a un
+    if (demande.projet.cheminGit) {
+      const [repoOwner, repoName] = demande.projet.cheminGit.split('/');
+
+      // Token du propriétaire (c'est lui qui envoie l'invitation)
+      const proprietaireToken = await this.userService.getGithubAccessToken(user.githubId);
+
+      // Infos du collaborateur (le demandeur)
+      const collaborateur = await this.prisma.githubUser.findUnique({
+        where: { id: demande.idUtilisateur },
+      });
+
+      if (proprietaireToken && collaborateur?.username) {
+        try {
+          const invitationId = await this.gitService.inviterCollaborateur(
+            proprietaireToken,
+            repoOwner,
+            repoName,
+            collaborateur.username,
+          );
+
+          // Accepter automatiquement si on dispose du token du collaborateur
+          if (invitationId !== null) {
+            const collaborateurToken = await this.userService.getGithubAccessToken(collaborateur.githubId);
+            if (collaborateurToken) {
+              await this.gitService.accepterInvitation(collaborateurToken, invitationId);
+              this.logger.log(
+                `${collaborateur.username} ajouté automatiquement au dépôt ${demande.projet.cheminGit}`,
+              );
+            } else {
+              this.logger.warn(
+                `Token manquant pour ${collaborateur.username} - l'invitation GitHub reste en attente`,
+              );
+            }
+          }
+        } catch (e) {
+          // On ne bloque pas l'acceptation si l'ajout GitHub échoue
+          this.logger.warn(
+            `Impossible d'ajouter ${collaborateur.username} au dépôt GitHub: ${e.message}`,
+          );
+        }
+      } else {
+        this.logger.warn(
+          `Ajout GitHub ignoré: token propriétaire=${!!proprietaireToken}, username collaborateur=${collaborateur?.username ?? 'inconnu'}`,
+        );
+      }
+    }
 
     return demandeUpdated;
   }

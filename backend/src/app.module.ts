@@ -10,6 +10,7 @@ import { CollabModule } from './collab/collab.module';
 import { GitModule } from './git/git.module';
 import { RedisModule } from './redis/redis.module';
 import { ProjetModule } from './projet/projet.module';
+import { DemandeAccesModule } from './demande-acces/demande-acces.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ProjetModule } from './projet/projet.module';
     CollabModule,
     GitModule,
     ProjetModule,
+    DemandeAccesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

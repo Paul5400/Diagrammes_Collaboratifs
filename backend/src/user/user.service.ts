@@ -52,4 +52,10 @@ export class UserService {
   async getGithubAccessToken(githubId: string): Promise<string | null> {
     return this.redis.getGithubToken(githubId);
   }
+
+  async getGithubAccessTokenByInternalId(internalId: string): Promise<string | null> {
+    const user = await this.prisma.githubUser.findUnique({ where: { id: internalId } });
+    if (!user) return null;
+    return this.redis.getGithubToken(user.githubId);
+  }
 }

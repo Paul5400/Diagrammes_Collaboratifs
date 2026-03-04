@@ -42,6 +42,7 @@ model Projet {
   proprietaire   GithubUser      @relation("ProprietaireProjet", fields: [idProprietaire], references: [id], onDelete: Cascade)
   diagrammes     Diagramme[]     @relation("ProjetDiagrammes")
   collaborations Collaboration[] @relation("ProjetCollaborations")
+  demandesAcces  DemandeAcces[]
 
   @@map("projets")
 }
@@ -114,6 +115,54 @@ enum Droit {
   ecriture
 }
 
+enum StatutDemande {
+  en_attente
+  acceptee
+  refusee
+}
+
+enum TypeNotification {
+  demande_acces
+  acces_accepte
+  acces_refuse
+  info
+}
+
+// ================================
+// Modèle DemandeAcces
+// ================================
+model DemandeAcces {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @map("id_demande") @db.Uuid
+  idUtilisateur String        @map("id_utilisateur") @db.Uuid
+  idProjet      String        @map("id_projet") @db.Uuid
+  statut        StatutDemande @default(en_attente)
+  dateDemande   DateTime      @default(now()) @map("date_demande") @db.Timestamp()
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamp()
+
+  utilisateur GithubUser @relation("Demandeur", fields: [idUtilisateur], references: [id], onDelete: Cascade)
+  projet      Projet     @relation(fields: [idProjet], references: [id], onDelete: Cascade)
+
+  @@unique([idUtilisateur, idProjet])
+  @@map("demandes_acces")
+}
+
+// ================================
+// Modèle Notification
+// ================================
+model Notification {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @map("id_notification") @db.Uuid
+  idUtilisateur String           @map("id_utilisateur") @db.Uuid
+  type          TypeNotification
+  message       String           @db.VarChar(255)
+  lu            Boolean          @default(false)
+  data          String?          @db.Text
+  dateCreation  DateTime         @default(now()) @map("date_creation") @db.Timestamp()
+
+  destinataire  GithubUser       @relation("DestinataireNotif", fields: [idUtilisateur], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
 // ================================
 // GitHub OAuth users
 // ================================
@@ -130,6 +179,8 @@ model GithubUser {
   projets        Projet[]        @relation("ProprietaireProjet")
   diagrammes     Diagramme[]     @relation("ProprietaireDiagramme")
   collaborations Collaboration[] @relation("GithubUserCollaborations")
+  demandesAcces  DemandeAcces[]  @relation("Demandeur")
+  notifications  Notification[]  @relation("DestinataireNotif")
 
   @@map("github_users")
 }

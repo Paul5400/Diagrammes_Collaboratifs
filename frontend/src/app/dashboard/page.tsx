@@ -7,6 +7,7 @@ import { Logo } from '../../components/Logo';
 import { ProjectCard } from '../../components/ProjectCard';
 import { UserMenu } from '../../components/UserMenu';
 import { CreateProjectDialog } from '../../components/dashboard/CreateProjectDialog';
+import { NotificationBell } from '../../components/dashboard/NotificationBell';
 import { FolderGit2, Loader2 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
@@ -86,12 +87,15 @@ export default function DashboardPage() {
       <header className="w-full border-b border-[var(--border-subtle)]">
         <div className="max-w-[1200px] mx-auto flex items-center justify-between p-6">
           <Logo />
-          <UserMenu
-            name={user.username || 'User'}
-            plan="GitHub Account"
-            initials={(user.username || 'U').substring(0, 2).toUpperCase()}
-            avatarUrl={user.avatarUrl}
-          />
+          <div className="flex items-center gap-4">
+             <NotificationBell />
+             <UserMenu
+                name={user.username || 'User'}
+                plan="GitHub Account"
+                initials={(user.username || 'U').substring(0, 2).toUpperCase()}
+                avatarUrl={user.avatarUrl}
+              />
+          </div>
         </div>
       </header>
 

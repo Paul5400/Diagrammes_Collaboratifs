@@ -16,6 +16,7 @@ interface EditorHeaderProps {
   currentUserData?: User | null;
   diagramType: string;
   onExportClick?: () => void;
+  children?: React.ReactNode;
 }
 
 export function EditorHeader(props: EditorHeaderProps) {
@@ -24,6 +25,7 @@ export function EditorHeader(props: EditorHeaderProps) {
   const authenticatedUserInformation = props.currentUserData;
   const customComponentClassName = props.className || '';
   const currentDiagramType = props.diagramType;
+  const headerChildren = props.children;
   
   const [hasCopiedLink, setHasCopiedLink] = React.useState(false);
 
@@ -101,6 +103,7 @@ export function EditorHeader(props: EditorHeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        {headerChildren}
         <div className="flex -space-x-2 mr-2">
           {[1, 2].map((userAvatarPlaceholderIndex) => (
             <div

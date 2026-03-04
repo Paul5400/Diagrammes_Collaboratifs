@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { EditorHeader } from '../../../../components/EditorHeader';
@@ -150,6 +151,14 @@ export default function ViewPage({ params }: { params: Promise<{ id: string }> }
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <Link href={`/projet/${projetId}`}>
+                            <button
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                <span>Mode Édition</span>
+                            </button>
+                        </Link>
                          <button
                             onClick={() => setIsExportDialogOpen(true)}
                             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"

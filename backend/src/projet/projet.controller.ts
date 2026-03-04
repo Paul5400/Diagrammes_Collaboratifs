@@ -22,7 +22,7 @@ export class ProjetController {
   constructor(
     private readonly projetService: ProjetService,
     private readonly diagrammeService: DiagrammeService,
-  ) { }
+  ) {}
 
   /**
    * GET /projets/:id/public
@@ -31,7 +31,7 @@ export class ProjetController {
    */
   @Get(':id/public')
   async findOnePublic(@Param('id') id: string) {
-     return this.projetService.findOnePublic(id);
+    return this.projetService.findOnePublic(id);
   }
 
   /**
@@ -44,6 +44,21 @@ export class ProjetController {
   async create(@Req() req: FastifyRequest, @Body() dto: CreateProjetDto) {
     const githubId = (req as any).user?.sub;
     return this.projetService.create(githubId, dto);
+  }
+
+  /**
+   * DELETE /projets/:id/collaborateurs/:userId
+   * Retirer un collaborateur du projet
+   */
+  @Delete(':id/collaborateurs/:userId')
+  @UseGuards(AuthGuard('jwt'))
+  async removeCollaborator(
+    @Req() req: FastifyRequest,
+    @Param('id') projectId: string,
+    @Param('userId') collaboratorId: string,
+  ) {
+    const githubId = (req as any).user?.sub;
+    return this.projetService.removeCollaborator(githubId, projectId, collaboratorId);
   }
 
   /**

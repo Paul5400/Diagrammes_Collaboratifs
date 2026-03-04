@@ -61,6 +61,33 @@ export function MermaidPreview(props: MermaidPreviewProps) {
   const currentMermaidSourceCode = props.mermaidCodeSource;
   const onRenderCallback = props.onRender;
 
+  // --- ERROR HANDLING: Content Too Large ---
+  const errorMatch = currentMermaidSourceCode.match(/^%%_ERROR_TOO_LARGE_([\d.]+)_%%/);
+  if (errorMatch) {
+      const sizeMB = errorMatch[1];
+      return (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-[#050505] text-white p-8 text-center select-none">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 max-w-md backdrop-blur-sm animate-in fade-in zoom-in-95 duration-300">
+                  <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                          <line x1="12" y1="9" x2="12" y2="13"></line>
+                          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                      </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-red-400 mb-2">Contenu trop volumineux</h3>
+                  <p className="text-zinc-400 mb-6 leading-relaxed">
+                      Le diagramme pèse <strong className="text-white">{sizeMB} MB</strong>, ce qui dépasse la limite de sécurité.
+                      L'affichage a été désactivé pour protéger votre navigateur.
+                  </p>
+                  <div className="text-xs text-zinc-600 font-mono bg-[#000000]/50 p-3 rounded border border-red-500/10">
+                      ERR_PAYLOAD_TOO_LARGE
+                  </div>
+              </div>
+          </div>
+      );
+  }
+
   // État contenant le code SVG généré par Mermaid
   const [renderedSvgMarkupContent, setRenderedSvgMarkupContent] =
     useState<string>('');
@@ -85,11 +112,12 @@ export function MermaidPreview(props: MermaidPreviewProps) {
    */
   const generateAsynchronousMermaidSvg = useCallback(
     async (rawMermaidCode: MermaidCode) => {
-      if (!rawMermaidCode.trim()) {
+      // Ignorer si c'est le marqueur d'erreur
+      if (!rawMermaidCode.trim() || rawMermaidCode.startsWith('%%_ERROR_TOO_LARGE_')) {
         setRenderedSvgMarkupContent('');
         return;
       }
-
+      
       try {
         // 1. On vérifie si Mermaid arrive à lire le code (sans planter)
         const isSyntaxValid = await mermaid.parse(rawMermaidCode, {

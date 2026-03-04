@@ -12,7 +12,7 @@ import { ExportDiagramDialog } from '../../../components/ExportDiagramDialog';
 import { CollaborativeEditorRef } from '../../../components/CollaborativeEditor';
 import { useAuth } from '@/context/AuthContext';
 import { MermaidCode } from '@/types/DiagramTypes';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Lock, Check } from 'lucide-react';
 
 const CollaborativeEditor = dynamic(
     () => import('../../../components/CollaborativeEditor').then((mod) => mod.CollaborativeEditor),
@@ -58,6 +58,9 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [mermaidCode, setMermaidCode] = useState<MermaidCode>('');
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
+    const [accessDenied, setAccessDenied] = useState(false);
+    const [requestSent, setRequestSent] = useState(false);
+    const [requestLoading, setRequestLoading] = useState(false);
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
 
@@ -92,7 +95,12 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                     router.push('/login');
                     return;
                 }
-                if (response.status === 404 || response.status === 403) {
+                if (response.status === 403) {
+                    setAccessDenied(true);
+                    setIsLoading(false);
+                    return;
+                }
+                if (response.status === 404) {
                     router.push('/dashboard');
                     return;
                 }
@@ -190,14 +198,89 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         setCurrentSvgContent(svg);
     }, []);
 
-    // Loading state
-    if (authLoading || isLoading || !projet) {
+    const handleRequestAccess = async () => {
+        if (!projetId) return;
+        setRequestLoading(true);
+        try {
+            const token = Cookies.get('diagrammer_token');
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/demandes-acces`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ projetId }),
+            });
+
+            if (response.ok) {
+                setRequestSent(true);
+            } else if (response.status === 409) {
+                const data = await response.json();
+                if(data.message.includes("déjà en cours")) {
+                   setRequestSent(true);
+                }
+                alert(data.message);
+            }
+             else {
+                alert("Erreur lors de l'envoi de la demande");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Erreur de connexion");
+        } finally {
+            setRequestLoading(false);
+        }
+    };
+
+    if (isLoading) {
         return (
             <div className="h-screen w-screen flex items-center justify-center bg-[var(--bg-page)]">
                 <Loader2 size={32} className="animate-spin text-[var(--accent-primary)]" />
             </div>
         );
     }
+
+    if (accessDenied) {
+        return (
+            <div className="h-screen w-screen flex flex-col items-center justify-center bg-[var(--bg-page)] text-white gap-6">
+                <div className="p-4 bg-red-500/10 rounded-full border border-red-500/20">
+                    <Lock size={48} className="text-red-500" />
+                </div>
+                <div className="text-center space-y-2">
+                    <h1 className="text-2xl font-bold">Accès Refusé</h1>
+                    <p className="text-zinc-400 max-w-md">
+                        Vous n'avez pas l'autorisation de modifier ce projet.
+                        Vous pouvez demander l'accès au propriétaire.
+                    </p>
+                </div>
+                
+                {requestSent ? (
+                    <div className="flex items-center gap-2 px-6 py-3 bg-green-500/10 text-green-500 rounded-md border border-green-500/20">
+                        <Check size={20} />
+                        <span>Demande envoyée avec succès</span>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={handleRequestAccess}
+                        disabled={requestLoading}
+                        className="px-6 py-3 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white font-medium rounded-md transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {requestLoading && <Loader2 size={18} className="animate-spin" />}
+                        Demander l'accès
+                    </button>
+                )}
+                
+                <button 
+                    onClick={() => router.push('/dashboard')}
+                    className="text-sm text-zinc-500 hover:text-white transition-colors mt-4"
+                >
+                    Retour au tableau de bord
+                </button>
+            </div>
+        );
+    }
+
+    if (!projet) return null;
 
     const selectedDiagram = projet.diagrammes.find(d => d.id === selectedDiagramId);
     const currentDiagramType = getDiagramTypeFromCode(mermaidCode);

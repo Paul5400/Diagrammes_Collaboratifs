@@ -5,9 +5,9 @@ import { UserModule } from '../user/user.module';
 import { GitModule } from '../git/git.module';
 
 @Module({
-    imports: [UserModule, GitModule],
-    controllers: [DiagrammeController],
-    providers: [DiagrammeService],
-    exports: [DiagrammeService],
+  imports: [UserModule, GitModule],
+  controllers: [DiagrammeController],
+  providers: [DiagrammeService],
+  exports: [DiagrammeService],
 })
-export class DiagramModule { }
+export class DiagramModule {}

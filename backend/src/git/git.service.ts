@@ -148,6 +148,43 @@ Ce projet contient des diagrammes collaboratifs versionnés avec Git.
   }
 
   /**
+   * Vérifier si un dépôt GitHub existe et qui en est propriétaire
+   */
+  async getRepository(
+    accessToken: string,
+    owner: string,
+    repo: string,
+  ): Promise<{ exists: boolean; isOwner: boolean; currentOwner?: string } | null> {
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (response.status === 404) {
+      return { exists: false, isOwner: false };
+    }
+
+    if (!response.ok) {
+      this.logger.error(`Failed to get repository: ${response.statusText}`);
+      return null;
+    }
+
+    const repoData: GithubRepo = await response.json();
+    const user = await this.getGithubUser(accessToken);
+
+    return {
+      exists: true,
+      isOwner: repoData.owner.login === user.login,
+      currentOwner: repoData.owner.login,
+    };
+  }
+
+  /**
    * Supprimer un dépôt GitHub
    */
   async deleteRepository(
@@ -155,6 +192,8 @@ Ce projet contient des diagrammes collaboratifs versionnés avec Git.
     owner: string,
     repo: string,
   ): Promise<void> {
+    this.logger.log(`Tentative de suppression du dépôt: ${owner}/${repo}`);
+    
     const response = await fetch(
       `${this.GITHUB_API}/repos/${owner}/${repo}`,
       {
@@ -166,12 +205,42 @@ Ce projet contient des diagrammes collaboratifs versionnés avec Git.
       },
     );
 
-    if (!response.ok && response.status !== 404) {
-      this.logger.error(`Failed to delete repository: ${response.statusText}`);
-      throw new BadRequestException('Impossible de supprimer le dépôt GitHub');
+    this.logger.log(`Réponse GitHub DELETE: Status ${response.status} ${response.statusText}`);
+
+    // Si le dépôt n'existe pas, pas d'erreur (déjà supprimé)
+    if (response.status === 404) {
+      this.logger.warn(`Repository ${owner}/${repo} not found (404), may have been already deleted`);
+      return;
     }
 
-    this.logger.log(`Repository deleted: ${owner}/${repo}`);
+    // Token GitHub expiré ou révoqué
+    if (response.status === 403) {
+      const errorBody = await response.text().catch(() => '');
+      this.logger.error(`GitHub token expired or insufficient permissions: ${errorBody}`);
+      
+      // Vérifier si c'est un problème de permissions
+      if (errorBody.includes('Must have admin rights')) {
+        throw new BadRequestException(
+          'Permissions insuffisantes. Veuillez vous déconnecter puis vous reconnecter pour autoriser la suppression de dépôts.'
+        );
+      }
+      
+      throw new BadRequestException(
+        'Votre session GitHub a expiré. Veuillez vous déconnecter puis vous reconnecter pour renouveler vos accès.'
+      );
+    }
+
+    // Autres erreurs
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => 'Unable to read response body');
+      this.logger.error(`Failed to delete repository: ${response.status} ${response.statusText}`);
+      this.logger.error(`Response body: ${errorBody}`);
+      throw new BadRequestException(
+        `Impossible de supprimer le dépôt GitHub: ${response.statusText}`
+      );
+    }
+
+    this.logger.log(`Repository successfully deleted: ${owner}/${repo}`);
   }
 
   /**

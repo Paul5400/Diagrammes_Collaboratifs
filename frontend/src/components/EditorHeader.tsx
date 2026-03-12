@@ -5,6 +5,7 @@ import {
   Share2,
   Download,
   ChevronLeft,
+  Clock,
   ChevronDown,
   Link2,
   UserPlus,
@@ -12,6 +13,8 @@ import {
 import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
 import { User } from '@/context/AuthContext';
+import { SaveButton } from './SaveButton';
+import { ProjectMenu } from './ProjectMenu';
 
 interface EditorHeaderProps {
   projectTitleLabel: string;
@@ -20,11 +23,18 @@ interface EditorHeaderProps {
   currentUserData?: User | null;
   diagramType: string;
   onExportClick?: () => void;
+  onSaveClick?: () => void;
+  onSaveAllClick?: () => void;
+  onHistoryClick?: () => void;
+  onDeleteProjectClick?: () => void;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
+  hasUnsavedChanges?: boolean;
+  canSave?: boolean;
   children?: React.ReactNode;
 }
 
 export function EditorHeader(props: EditorHeaderProps) {
-  // On reçoit l'unique objet 'props' et on pioche manuellement dedans
   const currentProjectTitle = props.projectTitleLabel;
   const projetId = props.projetId;
   const authenticatedUserInformation = props.currentUserData;
@@ -114,16 +124,25 @@ export function EditorHeader(props: EditorHeaderProps) {
 
         <div className="h-4 w-[1px] bg-[var(--border-subtle)]" />
 
-        <div className="flex flex-col">
-          <h1 className="text-sm font-semibold text-white tracking-tight leading-tight">
-            {currentProjectTitle}
-          </h1>
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col">
+            <h1 className="text-sm font-semibold text-white tracking-tight leading-tight">
+              {currentProjectTitle}
+            </h1>
+          </div>
         </div>
 
       </div>
 
       <div className="flex items-center gap-3">
+        {props.onDeleteProjectClick && (
+          <ProjectMenu onDeleteClick={props.onDeleteProjectClick} />
+        )}
+
+        <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />
+
         {headerChildren}
+
         <div className="flex -space-x-2 mr-2">
           {[1, 2].map((userAvatarPlaceholderIndex) => (
             <div
@@ -180,6 +199,31 @@ export function EditorHeader(props: EditorHeaderProps) {
             </div>
           )}
         </div>
+
+        <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />
+
+        {props.onSaveClick && (
+          <SaveButton
+            onSave={props.onSaveClick}
+            onSaveAll={props.onSaveAllClick}
+            isSaving={props.isSaving || false}
+            lastSaved={props.lastSaved || null}
+            hasUnsavedChanges={props.hasUnsavedChanges || false}
+            canSave={props.canSave ?? true}
+          />
+        )}
+
+        {props.onHistoryClick && (
+          <button
+            onClick={props.onHistoryClick}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-focus)] transition-all"
+          >
+            <Clock size={14} />
+            Historique
+          </button>
+        )}
+
+        <div className="h-6 w-[1px] bg-[var(--border-subtle)] mx-1" />
 
         <button
           onClick={props.onExportClick}

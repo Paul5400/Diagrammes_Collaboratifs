@@ -11,6 +11,7 @@ import { NotificationBell } from '../../components/dashboard/NotificationBell';
 import { FolderGit2, Loader2 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
+import { DashboardSkeleton } from '../../components/dashboard/DashboardSkeleton';
 
 interface Projet {
   id: string;
@@ -70,11 +71,7 @@ export default function DashboardPage() {
   }, [user]);
 
   if (authLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-page)] text-[var(--text-primary)]">
-        <Loader2 size={32} className="animate-spin text-[var(--accent-primary)]" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const handleLogout = () => {
@@ -121,8 +118,35 @@ export default function DashboardPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={32} className="animate-spin text-[var(--accent-primary)]" />
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="bg-[var(--bg-panel)] border border-white/10 rounded-lg overflow-hidden flex flex-col">
+                <div
+                  className="h-40 bg-[#111] flex items-center justify-center relative shimmer-wrapper"
+                  style={{
+                    backgroundImage: 'radial-gradient(#27272a 1px, transparent 0)',
+                    backgroundSize: '20px 20px',
+                  }}
+                >
+                  <div className="shimmer" />
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 rounded-md bg-zinc-800/50" />
+                    <div className="w-16 h-3 rounded-md bg-zinc-800/30" />
+                  </div>
+                </div>
+                <div className="p-4 space-y-3 font-medium">
+                  <div className="h-4 w-3/4 skeleton shimmer-wrapper">
+                    <div className="shimmer" />
+                  </div>
+                  <div className="h-3 w-1/2 skeleton shimmer-wrapper opacity-50">
+                    <div className="shimmer" />
+                  </div>
+                  <div className="h-2 w-1/3 skeleton shimmer-wrapper opacity-30">
+                    <div className="shimmer" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

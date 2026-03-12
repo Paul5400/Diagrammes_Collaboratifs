@@ -29,7 +29,7 @@ const TYPE_ICONS: Record<string, string> = {
     autre: '📄',
 };
 
-export function DiagramSidebar({ diagrammes, selectedId, isReadOnly = false, onSelect, onDelete, onCreateClick }: DiagramSidebarProps) {
+export const DiagramSidebar = React.memo(function DiagramSidebar({ diagrammes, selectedId, isReadOnly = false, onSelect, onDelete, onCreateClick }: DiagramSidebarProps) {
     return (
         <div className="w-64 min-w-[220px] h-full bg-[#0c0c0e] border-r border-[var(--border-subtle)] flex flex-col">
             {/* Header */}
@@ -89,4 +89,4 @@ export function DiagramSidebar({ diagrammes, selectedId, isReadOnly = false, onS
             </div>
         </div>
     );
-}
+});

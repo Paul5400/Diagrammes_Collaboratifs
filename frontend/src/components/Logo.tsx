@@ -8,7 +8,7 @@ interface LogoProps {
   showText?: boolean;
 }
 
-export function Logo({
+export const Logo = React.memo(function Logo({
   size = 'md',
   className = '',
   showText = true,
@@ -42,8 +42,9 @@ export function Logo({
         width={dimensions[size]}
         height={dimensions[size]}
         style={radiusStyles[size]}
+        priority
       />
       {showText && <span className={textClasses[size]}>Diagrammer</span>}
     </Link>
   );
-}
+});

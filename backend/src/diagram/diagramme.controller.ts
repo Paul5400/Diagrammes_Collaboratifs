@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Body,
@@ -78,17 +79,17 @@ export class DiagrammeController {
     return this.diagrammeService.getHistory(id, githubId);
   }
 
-  /**
-   * GET /diagrammes/:id/version/:sha
-   * Récupérer le contenu d'un diagramme à une version spécifique
-   */
-  @Get(':id/version/:sha')
-  async getVersionAtCommit(
-    @Req() req: FastifyRequest,
-    @Param('id') id: string,
-    @Param('sha') sha: string,
-  ) {
-    const githubId = (req as any).user?.sub;
-    return this.diagrammeService.getVersionAtCommit(id, sha, githubId);
-  }
+    /**
+     * GET /diagrammes/:id/version/:sha
+     * Récupérer le contenu d'un diagramme à une version spécifique
+     */
+    @Get(':id/version/:sha')
+    async getVersionAtCommit(
+        @Req() req: FastifyRequest,
+        @Param('id') id: string,
+        @Param('sha') sha: string,
+    ) {
+        const githubId = (req as any).user?.sub;
+        return this.diagrammeService.getVersionAtCommit(id, sha, githubId);
+    }
 }

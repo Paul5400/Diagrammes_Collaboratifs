@@ -40,9 +40,39 @@ export class ProjetService {
     }
 
     const repoName = this.gitService.slugify(dto.titre);
+    const user = await this.gitService.getGithubUser(accessToken);
+    const owner = user.login;
 
     try {
-      const { owner, repo, url } = await this.gitService.createRepository(
+      // Vérifier si un projet PostgreSQL utilise déjà ce cheminGit
+      const existingProjet = await this.prisma.projet.findFirst({
+        where: { cheminGit: `${owner}/${repoName}` },
+      });
+
+      if (existingProjet) {
+        throw new BadRequestException(
+          `Un projet existe déjà avec ce dépôt GitHub (${owner}/${repoName}). Veuillez choisir un autre nom.`
+        );
+      }
+
+      // Vérifier si le repo existe sur GitHub
+      const repoInfo = await this.gitService.getRepository(accessToken, owner, repoName);
+
+      if (repoInfo?.exists) {
+        // Le repo existe déjà → REFUSER (pas d'import)
+        if (repoInfo.isOwner) {
+          throw new BadRequestException(
+            `Un dépôt GitHub "${repoName}" existe déjà dans votre compte. Veuillez choisir un autre nom ou supprimer le dépôt existant sur GitHub.`
+          );
+        } else {
+          throw new BadRequestException(
+            `Le dépôt "${repoName}" existe déjà et appartient à ${repoInfo.currentOwner}. Veuillez choisir un autre nom.`
+          );
+        }
+      }
+
+      // Le repo n'existe pas → CRÉATION
+      const { owner: createdOwner, repo: createdRepo, url } = await this.gitService.createRepository(
         accessToken,
         repoName,
         dto.description || '',
@@ -51,16 +81,17 @@ export class ProjetService {
 
       await this.gitService.createInitialReadme(
         accessToken,
-        owner,
-        repo,
+        createdOwner,
+        createdRepo,
         dto.titre,
       );
 
+      // Créer le projet dans PostgreSQL
       const projet = await this.prisma.projet.create({
         data: {
           titre: dto.titre.trim(),
           description: dto.description?.trim() || null,
-          cheminGit: `${owner}/${repo}`,
+          cheminGit: `${createdOwner}/${createdRepo}`,
           public: dto.public || false,
           idProprietaire: githubUser.id,
         },
@@ -170,7 +201,7 @@ export class ProjetService {
   async delete(projetId: string, githubId: string): Promise<void> {
     const githubUser = await this.userService.findByGithubId(githubId);
     if (!githubUser) {
-      throw new NotFoundException('Utilisateur introuvable');
+      throw new NotFoundException('Utilisateur introuvable. Votre session a peut-être expiré.');
     }
 
     const projet = await this.prisma.projet.findUnique({
@@ -178,27 +209,37 @@ export class ProjetService {
     });
 
     if (!projet) {
-      throw new NotFoundException('Projet introuvable');
+      throw new NotFoundException('Ce projet n\'existe pas ou a déjà été supprimé.');
     }
 
     // Seul le propriétaire peut supprimer
     if (projet.idProprietaire !== githubUser.id) {
-      throw new ForbiddenException('Seul le propriétaire peut supprimer ce projet');
+      throw new ForbiddenException('Vous ne pouvez pas supprimer ce projet car vous n\'en êtes pas le propriétaire.');
     }
 
     // Supprimer le dépôt GitHub si existant
     if (projet.cheminGit) {
+      this.logger.log(`Tentative de suppression du dépôt GitHub: ${projet.cheminGit}`);
       const accessToken = await this.userService.getGithubAccessToken(githubId);
-      if (accessToken) {
-        const [owner, repo] = projet.cheminGit.split('/');
-        try {
-          await this.gitService.deleteRepository(accessToken, owner, repo);
-        } catch (error) {
-          this.logger.warn(`Impossible de supprimer le dépôt GitHub: ${error.message}`);
-        }
+      
+      if (!accessToken) {
+        this.logger.error(`Token GitHub non disponible pour l'utilisateur ${githubId}`);
+        throw new BadRequestException(
+          'Votre session GitHub a expiré. Veuillez vous déconnecter puis vous reconnecter pour supprimer ce projet.'
+        );
       }
+
+      const [owner, repo] = projet.cheminGit.split('/');
+      this.logger.log(`Suppression du dépôt: ${owner}/${repo}`);
+      
+      // Ne pas ignorer les erreurs - si GitHub échoue, tout échoue
+      await this.gitService.deleteRepository(accessToken, owner, repo);
+      this.logger.log(`Dépôt GitHub supprimé avec succès: ${owner}/${repo}`);
+    } else {
+      this.logger.log(`Aucun dépôt GitHub associé au projet ${projet.id}`);
     }
 
+    // Supprimer le projet en base seulement si GitHub a réussi (ou pas de dépôt)
     await this.prisma.projet.delete({
       where: { id: projetId },
     });

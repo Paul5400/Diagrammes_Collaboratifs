@@ -63,7 +63,7 @@ export const MermaidPreview = React.memo(function MermaidPreview(props: MermaidP
   const onRenderCallback = props.onRender;
 
   // --- ERROR HANDLING: Content Too Large ---
-  const errorMatch = currentMermaidSourceCode.match(/^%%_ERROR_TOO_LARGE_([\d.]+)_%%/);
+  const errorMatch = props.mermaidCodeSource.match(/^%%_ERROR_TOO_LARGE_([\d.]+)_%%/);
   if (errorMatch) {
       const sizeMB = errorMatch[1];
       return (
@@ -158,7 +158,7 @@ export const MermaidPreview = React.memo(function MermaidPreview(props: MermaidP
         );
       }
     },
-    []
+    [onRenderCallback]
   );
 
   /**

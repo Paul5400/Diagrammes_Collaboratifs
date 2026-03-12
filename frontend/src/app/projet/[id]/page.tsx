@@ -90,6 +90,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     }, [accessDenied, inviteToken]);
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
+    const initialSelectionDoneRef = React.useRef(false);
 
     // GitHub Auto-Save hook
     const { manualSave, lastSaved, isSaving, hasUnsavedChanges, canSave } = useGitHubAutoSave({
@@ -147,7 +148,8 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             // Auto-open create dialog if no diagrams
             if (data.diagrammes.length === 0) {
                 setIsCreateDialogOpen(true);
-            } else if (!selectedDiagramId) {
+            } else if (!initialSelectionDoneRef.current) {
+                initialSelectionDoneRef.current = true;
                 // Select the first diagram by default
                 setSelectedDiagramId(data.diagrammes[0].id);
                 setMermaidCode(data.diagrammes[0].contenu || '');
@@ -157,7 +159,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         } finally {
             setIsLoading(false);
         }
-    }, [projetId, router, selectedDiagramId]);
+    }, [projetId, router]);
 
     useEffect(() => {
         if (projetId && user) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import dynamic from 'next/dynamic';
@@ -264,6 +264,19 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             console.error('Failed to save all diagrams:', error);
         }
     }, [projetId, isSaving]);
+
+    const selectedDiagram = useMemo(() => {
+        if (!projet || !selectedDiagramId) return null;
+        return projet.diagrammes.find((d) => d.id === selectedDiagramId) || null;
+    }, [projet, selectedDiagramId]);
+
+    const currentDiagramType = useMemo(() => {
+        if (!selectedDiagram) return 'Diagramme';
+        if (selectedDiagram.type && selectedDiagram.type !== 'Custom') {
+            return selectedDiagram.type;
+        }
+        return getDiagramTypeFromCode(mermaidCode);
+    }, [selectedDiagram, mermaidCode]);
 
     // Loading state
     if (authLoading || isLoading || !projet) {

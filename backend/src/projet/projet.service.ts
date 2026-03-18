@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { GitService } from '../git/git.service';
 import { UserService } from '../user/user.service';
+import { RedisService } from '../redis/redis.service';
 import { Projet } from '@prisma/client';
 import { CreateProjetDto } from './dto/create-projet.dto';
 
@@ -19,6 +20,7 @@ export class ProjetService {
     private readonly prisma: PrismaService,
     private readonly gitService: GitService,
     private readonly userService: UserService,
+    private readonly redisService: RedisService,
   ) { }
 
   /**
@@ -283,8 +285,19 @@ export class ProjetService {
 
     for (const diagramme of projet.diagrammes) {
       try {
-        const fileName = this.gitService.slugify(diagramme.titre) || `diagram-${diagramme.id}`;
-        const filePath = `diagrams/${fileName}.mmd`;
+        let filePath = diagramme.cheminGit;
+        if (!filePath) {
+          const baseSlug = this.gitService.slugify(diagramme.titre) || 'diagram';
+          const shortId = diagramme.id.substring(0, 6);
+          const fileName = `${baseSlug}-${shortId}`;
+          filePath = `diagrams/${fileName}.mmd`;
+        }
+
+        const redisKey = `yjs:diagram-${diagramme.id}`;
+        const redisContent = await this.redisService.get(redisKey);
+
+        const finalContent = redisContent ?? diagramme.contenu ?? '';
+
 
         // Récupérer le SHA actuel du fichier s'il existe
         const currentSha = await this.gitService.getFileSha(
@@ -300,16 +313,18 @@ export class ProjetService {
           owner,
           repo,
           filePath,
-          diagramme.contenu || '',
+          finalContent,
           `Update: ${diagramme.titre}`,
           currentSha || undefined,
         );
 
         // Mettre à jour le cheminGit dans la base de données
-        await this.prisma.diagramme.update({
-          where: { id: diagramme.id },
-          data: { cheminGit: filePath },
-        });
+        if (diagramme.cheminGit !== filePath) {
+           await this.prisma.diagramme.update({
+             where: { id: diagramme.id },
+             data: { cheminGit: filePath },
+           });
+        }
 
         savedDiagrams.push({
           id: diagramme.id,

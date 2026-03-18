@@ -66,6 +66,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [isDeleting, setIsDeleting] = useState(false);
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
+    const [isSavingAll, setIsSavingAll] = useState(false);
 
     // GitHub Auto-Save hook
     const { manualSave, lastSaved, isSaving, hasUnsavedChanges, canSave } = useGitHubAutoSave({
@@ -239,11 +240,12 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
 
     // Sauvegarder tous les diagrammes du projet
     const handleSaveAll = useCallback(async () => {
-        if (!projetId || isSaving) return;
+        if (!projetId || isSaving || isSavingAll) return;
 
         const token = Cookies.get('diagrammer_token');
         if (!token) return;
 
+        setIsSavingAll(true);
         try {
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_BACKEND_URL}/projets/${projetId}/save`,
@@ -256,14 +258,18 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             if (response.ok) {
                 const result = await response.json();
                 console.log(`Saved ${result.savedDiagrams.length} diagrams to GitHub`);
-                if (result.errors.length > 0) {
+                if (result.errors && result.errors.length > 0) {
                     console.error('Some diagrams failed to save:', result.errors);
                 }
+            } else {
+                console.error('Failed to save all diagrams, remote error');
             }
         } catch (error) {
             console.error('Failed to save all diagrams:', error);
+        } finally {
+            setIsSavingAll(false);
         }
-    }, [projetId, isSaving]);
+    }, [projetId, isSaving, isSavingAll]);
 
     const selectedDiagram = useMemo(() => {
         if (!projet || !selectedDiagramId) return null;
@@ -352,7 +358,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 onDeleteProjectClick={() => setIsDeleteDialogOpen(true)}
                 onSaveClick={manualSave}
                 onSaveAllClick={handleSaveAll}
-                isSaving={isSaving}
+                isSaving={isSaving || isSavingAll}
                 lastSaved={lastSaved}
                 hasUnsavedChanges={hasUnsavedChanges}
                 canSave={canSave}

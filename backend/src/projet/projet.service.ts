@@ -180,7 +180,7 @@ export class ProjetService {
   async delete(projetId: string, githubId: string): Promise<void> {
     const githubUser = await this.userService.findByGithubId(githubId);
     if (!githubUser) {
-      throw new NotFoundException('Utilisateur introuvable');
+      throw new NotFoundException('Utilisateur introuvable. Votre session a peut-être expiré.');
     }
 
     const projet = await this.prisma.projet.findUnique({
@@ -188,27 +188,37 @@ export class ProjetService {
     });
 
     if (!projet) {
-      throw new NotFoundException('Projet introuvable');
+      throw new NotFoundException('Ce projet n\'existe pas ou a déjà été supprimé.');
     }
 
     // Seul le propriétaire peut supprimer
     if (projet.idProprietaire !== githubUser.id) {
-      throw new ForbiddenException('Seul le propriétaire peut supprimer ce projet');
+      throw new ForbiddenException('Vous ne pouvez pas supprimer ce projet car vous n\'en êtes pas le propriétaire.');
     }
 
     // Supprimer le dépôt GitHub si existant
     if (projet.cheminGit) {
+      this.logger.log(`Tentative de suppression du dépôt GitHub: ${projet.cheminGit}`);
       const accessToken = await this.userService.getGithubAccessToken(githubId);
-      if (accessToken) {
-        const [owner, repo] = projet.cheminGit.split('/');
-        try {
-          await this.gitService.deleteRepository(accessToken, owner, repo);
-        } catch (error) {
-          this.logger.warn(`Impossible de supprimer le dépôt GitHub: ${error.message}`);
-        }
+      
+      if (!accessToken) {
+        this.logger.error(`Token GitHub non disponible pour l'utilisateur ${githubId}`);
+        throw new BadRequestException(
+          'Votre session GitHub a expiré. Veuillez vous déconnecter puis vous reconnecter pour supprimer ce projet.'
+        );
       }
+
+      const [owner, repo] = projet.cheminGit.split('/');
+      this.logger.log(`Suppression du dépôt: ${owner}/${repo}`);
+      
+      // Ne pas ignorer les erreurs - si GitHub échoue, tout échoue
+      await this.gitService.deleteRepository(accessToken, owner, repo);
+      this.logger.log(`Dépôt GitHub supprimé avec succès: ${owner}/${repo}`);
+    } else {
+      this.logger.log(`Aucun dépôt GitHub associé au projet ${projet.id}`);
     }
 
+    // Supprimer le projet en base seulement si GitHub a réussi (ou pas de dépôt)
     await this.prisma.projet.delete({
       where: { id: projetId },
     });

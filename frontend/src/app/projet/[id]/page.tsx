@@ -11,6 +11,7 @@ import { CreateDiagramDialog } from '../../../components/CreateDiagramDialog';
 import { ExportDiagramDialog } from '../../../components/ExportDiagramDialog';
 import { HistoryDialog } from '../../../components/HistoryDialog';
 import { DeleteProjectDialog } from '../../../components/DeleteProjectDialog';
+import { ErrorNotification } from '../../../components/ErrorNotification';
 import { CollaborativeEditorRef } from '../../../components/CollaborativeEditor';
 import { useAuth } from '@/context/AuthContext';
 import { MermaidCode } from '@/types/DiagramTypes';
@@ -64,6 +65,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     const [currentSvgContent, setCurrentSvgContent] = useState<string>('');
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
     const [isSavingAll, setIsSavingAll] = useState(false);
@@ -177,9 +179,24 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
 
             console.log(`[handleDeleteDiagram] Response Status: ${response.status}`);
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error(`[handleDeleteDiagram] Error Data:`, errorData);
-                throw new Error('Failed to delete diagram');
+                const errorData = await response.json().catch(() => ({ message: 'Une erreur est survenue', statusCode: response.status }));
+                
+                let errorTitle = 'Erreur de suppression';
+                let errorMessage = errorData.message || 'Impossible de supprimer le diagramme.';
+
+                if (response.status === 401) {
+                    errorTitle = 'Session expirée';
+                    errorMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+                } else if (response.status === 403) {
+                    errorTitle = 'Accès refusé';
+                    errorMessage = 'Vous n\'avez pas les droits pour supprimer ce diagramme.';
+                } else if (response.status === 404) {
+                    errorTitle = 'Diagramme introuvable';
+                    errorMessage = 'Ce diagramme n\'existe plus ou a déjà été supprimé.';
+                }
+
+                setError({ title: errorTitle, message: errorMessage });
+                return;
             }
 
             setProjet((prev) => {
@@ -196,7 +213,10 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             }
         } catch (error) {
             console.error('Error deleting diagram:', error);
-            alert('Erreur lors de la suppression');
+            setError({
+                title: 'Erreur réseau',
+                message: 'Impossible de communiquer avec le serveur. Vérifiez votre connexion internet.'
+            });
         }
     }, [selectedDiagramId]);
 
@@ -220,14 +240,39 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             );
 
             if (!response.ok) {
-                throw new Error('Failed to delete project');
+                const errorData = await response.json().catch(() => ({ message: 'Une erreur est survenue', statusCode: response.status }));
+                
+                let errorTitle = 'Erreur de suppression';
+                let errorMessage = errorData.message || 'Impossible de supprimer le projet.';
+
+                // Personnaliser le message selon le code d'erreur
+                if (response.status === 401) {
+                    errorTitle = 'Session expirée';
+                    errorMessage = 'Votre session a expiré. Veuillez vous reconnecter.';
+                } else if (response.status === 403) {
+                    errorTitle = 'Accès refusé';
+                    errorMessage = 'Vous n\'avez pas les droits pour supprimer ce projet.';
+                } else if (response.status === 404) {
+                    errorTitle = 'Projet introuvable';
+                    errorMessage = 'Ce projet n\'existe plus ou a déjà été supprimé.';
+                } else if (errorMessage.includes('session GitHub a expiré') || errorMessage.includes('Permissions insuffisantes')) {
+                    errorTitle = 'Reconnexion nécessaire';
+                }
+
+                setError({ title: errorTitle, message: errorMessage });
+                setIsDeleting(false);
+                setIsDeleteDialogOpen(false);
+                return;
             }
 
-            // Redirection vers le dashboard
+            // Redirection vers le dashboard après succès
             router.push('/dashboard');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting project:', error);
-            alert('Erreur lors de la suppression du projet');
+            setError({
+                title: 'Erreur réseau',
+                message: 'Impossible de communiquer avec le serveur. Vérifiez votre connexion internet.'
+            });
             setIsDeleting(false);
             setIsDeleteDialogOpen(false);
         }
@@ -345,7 +390,6 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         );
     }
 
-
     return (
         <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">
             {/* Header */}
@@ -437,6 +481,14 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 projectName={projet.titre}
                 onConfirm={handleDeleteProject}
                 isDeleting={isDeleting}
+            />
+
+            {/* Error Notification */}
+            <ErrorNotification
+                isOpen={!!error}
+                onClose={() => setError(null)}
+                title={error?.title || 'Erreur'}
+                message={error?.message || 'Une erreur est survenue.'}
             />
         </div>
     );

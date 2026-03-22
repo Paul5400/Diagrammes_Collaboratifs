@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import dynamic from 'next/dynamic';
@@ -91,6 +91,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
 
     const collaborativeEditorRef = React.useRef<CollaborativeEditorRef>(null);
     const initialSelectionDoneRef = React.useRef(false);
+    const [isSavingAll, setIsSavingAll] = useState(false);
 
     // GitHub Auto-Save hook
     const { manualSave, lastSaved, isSaving, hasUnsavedChanges, canSave } = useGitHubAutoSave({
@@ -313,11 +314,12 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
 
     // Sauvegarder tous les diagrammes du projet
     const handleSaveAll = useCallback(async () => {
-        if (!projetId || isSaving) return;
+        if (!projetId || isSaving || isSavingAll) return;
 
         const token = Cookies.get('diagrammer_token');
         if (!token) return;
 
+        setIsSavingAll(true);
         try {
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_BACKEND_URL}/projets/${projetId}/save`,
@@ -330,14 +332,31 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             if (response.ok) {
                 const result = await response.json();
                 console.log(`Saved ${result.savedDiagrams.length} diagrams to GitHub`);
-                if (result.errors.length > 0) {
+                if (result.errors && result.errors.length > 0) {
                     console.error('Some diagrams failed to save:', result.errors);
                 }
+            } else {
+                console.error('Failed to save all diagrams, remote error');
             }
         } catch (error) {
             console.error('Failed to save all diagrams:', error);
+        } finally {
+            setIsSavingAll(false);
         }
-    }, [projetId, isSaving]);
+    }, [projetId, isSaving, isSavingAll]);
+
+    const selectedDiagram = useMemo(() => {
+        if (!projet || !selectedDiagramId) return null;
+        return projet.diagrammes.find((d) => d.id === selectedDiagramId) || null;
+    }, [projet, selectedDiagramId]);
+
+    const currentDiagramType = useMemo(() => {
+        if (!selectedDiagram) return 'Diagramme';
+        if (selectedDiagram.type && selectedDiagram.type !== 'Custom') {
+            return selectedDiagram.type;
+        }
+        return getDiagramTypeFromCode(mermaidCode);
+    }, [selectedDiagram, mermaidCode]);
 
     // Rejoindre via lien d'invitation direct (sans approbation)
     const handleJoinWithInvite = async (token: string) => {
@@ -408,7 +427,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         }
     };
 
-    if (isLoading) {
+    if (isLoading || !projet) {
         return (
             <div className="h-screen w-screen bg-[var(--bg-page)] flex flex-col overflow-hidden">
                 {/* Header Skeleton */}
@@ -468,103 +487,6 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
         );
     }
 
-    if (accessDenied) {
-        // Cas 1 : lien d'invitation direct
-        if (inviteToken) {
-            return (
-                <div className="h-screen w-screen flex flex-col items-center justify-center bg-[var(--bg-page)] text-white gap-6">
-                    {requestLoading && !joinSuccess && !joinError && (
-                        <>
-                            <Loader2 size={40} className="animate-spin text-[var(--accent-primary)]" />
-                            <p className="text-zinc-400 text-sm">Vous rejoignez le projet…</p>
-                        </>
-                    )}
-                    {joinSuccess && (
-                        <>
-                            <div className="p-4 bg-green-500/10 rounded-full border border-green-500/20">
-                                <Check size={48} className="text-green-400" />
-                            </div>
-                            <div className="text-center space-y-2">
-                                <h1 className="text-2xl font-bold">Vous avez rejoint le projet !</h1>
-                                <p className="text-zinc-400 text-sm">Redirection en cours…</p>
-                            </div>
-                        </>
-                    )}
-                    {joinError && (
-                        <>
-                            <div className="p-4 bg-red-500/10 rounded-full border border-red-500/20">
-                                <Lock size={48} className="text-red-500" />
-                            </div>
-                            <div className="text-center space-y-2">
-                                <h1 className="text-2xl font-bold">Lien invalide</h1>
-                                <p className="text-zinc-400 max-w-md">{joinError}</p>
-                            </div>
-                            <button
-                                onClick={() => router.push('/dashboard')}
-                                className="text-sm text-zinc-500 hover:text-white transition-colors mt-2"
-                            >
-                                Retour au tableau de bord
-                            </button>
-                        </>
-                    )}
-                </div>
-            );
-        }
-
-        // Cas 2 : accès refusé sans lien d'invitation
-        return (
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-[var(--bg-page)] text-white gap-6">
-                <div className="p-4 bg-red-500/10 rounded-full border border-red-500/20">
-                    <Lock size={48} className="text-red-500" />
-                </div>
-                <div className="text-center space-y-2">
-                    <h1 className="text-2xl font-bold">Accès Refusé</h1>
-                    <p className="text-zinc-400 max-w-md">
-                        Vous n'avez pas l'autorisation de modifier ce projet.
-                        Vous pouvez demander l'accès au propriétaire.
-                    </p>
-                </div>
-                
-                {requestLoading && !requestSent && (
-                    <div className="flex items-center gap-2 px-6 py-3 text-zinc-400">
-                        <Loader2 size={18} className="animate-spin" />
-                        <span className="text-sm">Envoi en cours...</span>
-                    </div>
-                )}
-
-                {requestSent ? (
-                    <div className="flex items-center gap-2 px-6 py-3 bg-green-500/10 text-green-500 rounded-md border border-green-500/20">
-                        <Check size={20} />
-                        <span>Demande envoyée avec succès</span>
-                    </div>
-                ) : (
-                    !requestLoading && (
-                        <button 
-                            onClick={handleRequestAccess}
-                            disabled={requestLoading}
-                            className="px-6 py-3 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white font-medium rounded-md transition-colors disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {requestLoading && <Loader2 size={18} className="animate-spin" />}
-                            Demander l'accès
-                        </button>
-                    )
-                )}
-                
-                <button 
-                    onClick={() => router.push('/dashboard')}
-                    className="text-sm text-zinc-500 hover:text-white transition-colors mt-4"
-                >
-                    Retour au tableau de bord
-                </button>
-            </div>
-        );
-    }
-
-    if (!projet) return null;
-
-    const selectedDiagram = projet?.diagrammes.find(d => d.id === selectedDiagramId);
-    const currentDiagramType = selectedDiagram ? getDiagramTypeFromCode(mermaidCode) : '';
-
     return (
         <div className="flex flex-col h-screen bg-[var(--bg-page)] overflow-hidden">
             {/* Header */}
@@ -578,7 +500,7 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                 onDeleteProjectClick={() => setIsDeleteDialogOpen(true)}
                 onSaveClick={manualSave}
                 onSaveAllClick={handleSaveAll}
-                isSaving={isSaving}
+                isSaving={isSaving || isSavingAll}
                 lastSaved={lastSaved}
                 hasUnsavedChanges={hasUnsavedChanges}
                 canSave={canSave}

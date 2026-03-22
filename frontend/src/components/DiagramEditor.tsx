@@ -171,15 +171,6 @@ export function DiagramEditor({ id, projectName, initialCode, isReadOnly = false
   const collaborativeMonacoEditorReference =
     useRef<CollaborativeEditorRef>(null);
 
-  /**
-   * ÉTAT : mermaidDiagramSourceCode
-   * Stocke le code texte actuel du diagramme pour la prévisualisation et l'export.
-   * Initialisé avec le code fourni ou une chaîne vide.
-   */
-  const [mermaidDiagramSourceCode, setMermaidDiagramSourceCode] =
-    useState<MermaidCode>(initialCode || '' as MermaidCode);
-
-
   const handleMonacoContentModification = useCallback(
     (updatedContent: MermaidCode | undefined) => {
       setMermaidDiagramSourceCode(updatedContent || '');

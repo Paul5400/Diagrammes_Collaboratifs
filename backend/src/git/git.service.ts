@@ -327,6 +327,46 @@ Ce projet contient des diagrammes collaboratifs versionnés avec Git.
   }
 
   /**
+   * Supprimer un fichier dans le dépôt
+   */
+  async deleteFile(
+    accessToken: string,
+    owner: string,
+    repo: string,
+    path: string,
+    message: string,
+    sha: string,
+  ): Promise<void> {
+    const body = {
+      message,
+      sha,
+    };
+
+    const response = await fetch(
+      `${this.GITHUB_API}/repos/${owner}/${repo}/contents/${path}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        this.logger.warn(`File ${path} not found on GitHub, it might have been already deleted.`);
+        return;
+      }
+      const errText = await response.text();
+      throw new Error(`Erreur GitHub API (${response.status}): ${errText}`);
+    }
+
+    this.logger.log(`File successfully deleted on GitHub: ${path}`);
+  }
+
+  /**
    * Obtenir l'historique des commits pour un fichier spécifique
    */
   async getFileHistory(

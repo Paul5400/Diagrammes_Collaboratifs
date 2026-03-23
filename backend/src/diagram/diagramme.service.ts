@@ -198,6 +198,32 @@ export class DiagrammeService {
             throw new ForbiddenException("Vous n'avez pas le droit de supprimer ce diagramme");
         }
 
+        // Tenter de supprimer sur GitHub si le chemin et le projet sont définis
+        if (diagramme.cheminGit && diagramme.projet?.cheminGit) {
+            try {
+                const accessToken = await this.userService.getGithubAccessToken(githubId);
+                if (accessToken) {
+                    const [owner, repo] = diagramme.projet.cheminGit.split('/');
+                    const sha = await this.gitService.getFileSha(accessToken, owner, repo, diagramme.cheminGit);
+                    
+                    if (sha) {
+                        await this.gitService.deleteFile(
+                            accessToken,
+                            owner,
+                            repo,
+                            diagramme.cheminGit,
+                            `Delete diagram: ${diagramme.titre}`,
+                            sha
+                        );
+                        this.logger.log(`Diagramme supprimé sur GitHub: ${diagramme.cheminGit}`);
+                    }
+                }
+            } catch (error) {
+                // On log mais on ne bloque pas la suppression locale si la suppression sur GitHub échoue
+                this.logger.error(`Erreur lors de la suppression GitHub du diagramme ${diagrammeId}:`, error);
+            }
+        }
+
         console.log(`[DiagrammeService] Deleting diagram ${diagrammeId} from DB`);
         await this.prisma.diagramme.delete({
             where: { id: diagrammeId },

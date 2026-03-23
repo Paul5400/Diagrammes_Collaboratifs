@@ -443,13 +443,37 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
                         <Lock size={32} />
                     </div>
                     <h1 className="text-2xl font-bold mb-3">Accès refusé</h1>
-                    <p className="text-zinc-400 mb-6 font-medium">Vous n\'avez pas la permission d\'éditer ce projet. Si vous pensez qu\'il s\'agit d\'une erreur, veuillez demander une invitation au propriétaire.</p>
-                    <button 
-                        onClick={() => router.push('/dashboard')} 
-                        className="px-6 py-2.5 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] transition-colors rounded-lg font-medium"
-                    >
-                        Retour au tableau de bord
-                    </button>
+                    <p className="text-zinc-400 mb-6 font-medium">Vous n\'avez pas la permission d\'éditer ce projet. Si vous pensez qu\'il s\'agit d\'une erreur, veuillez demander l'accès au propriétaire.</p>
+                    
+                    {requestSent ? (
+                        <div className="p-4 mb-4 bg-green-500/10 border border-green-500/20 text-green-400 rounded-lg text-sm">
+                            <p className="font-semibold mb-1">Demande envoyée !</p>
+                            <p>Le propriétaire du projet a été notifié.</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={handleRequestAccess}
+                                disabled={requestLoading}
+                                className="px-6 py-2.5 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] transition-colors rounded-lg font-medium w-full flex items-center justify-center gap-2"
+                            >
+                                {requestLoading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                        Envoi en cours...
+                                    </>
+                                ) : (
+                                    "Demander l'accès au projet"
+                                )}
+                            </button>
+                            <button
+                                onClick={() => router.push('/dashboard')}
+                                className="px-6 py-2.5 bg-transparent hover:bg-white/5 border border-white/10 transition-colors rounded-lg font-medium w-full"
+                            >
+                                Retour au tableau de bord
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         );

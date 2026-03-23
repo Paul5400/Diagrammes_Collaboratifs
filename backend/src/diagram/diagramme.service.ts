@@ -33,13 +33,17 @@ export class DiagrammeService {
 
         const projet = await this.prisma.projet.findUnique({
             where: { id: projetId },
+            include: { collaborations: true },
         });
 
         if (!projet) {
             throw new NotFoundException('Ce projet n\'existe pas ou a été supprimé.');
         }
 
-        if (projet.idProprietaire !== githubUser.id) {
+        const isOwner = projet.idProprietaire === githubUser.id;
+        const isCollaborator = projet.collaborations.some(c => c.idUtilisateur === githubUser.id);
+
+        if (!isOwner && !isCollaborator) {
             throw new ForbiddenException('Vous n\'avez pas les droits pour accéder à ce projet.');
         }
 
@@ -97,15 +101,21 @@ export class DiagrammeService {
 
         const diagramme = await this.prisma.diagramme.findUnique({
             where: { id: diagrammeId },
-            include: { projet: true },
+            include: { 
+                projet: {
+                    include: { collaborations: true }
+                } 
+            },
         });
 
         if (!diagramme) {
             throw new NotFoundException('Diagramme introuvable');
         }
 
-        // Vérifier l'accès via le projet
-        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+        const isOwner = diagramme.projet?.idProprietaire === githubUser.id;
+        const isCollaborator = diagramme.projet?.collaborations.some(c => c.idUtilisateur === githubUser.id);
+
+        if (!isOwner && !isCollaborator) {
             throw new ForbiddenException("Vous n'avez pas accès à ce diagramme");
         }
 
@@ -127,14 +137,21 @@ export class DiagrammeService {
 
         const diagramme = await this.prisma.diagramme.findUnique({
             where: { id: diagrammeId },
-            include: { projet: true },
+            include: { 
+                projet: {
+                    include: { collaborations: true }
+                } 
+            },
         });
 
         if (!diagramme) {
             throw new NotFoundException('Diagramme introuvable');
         }
 
-        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+        const isOwner = diagramme.projet?.idProprietaire === githubUser.id;
+        const isCollaborator = diagramme.projet?.collaborations.some(c => c.idUtilisateur === githubUser.id);
+
+        if (!isOwner && !isCollaborator) {
             throw new ForbiddenException("Vous n'avez pas le droit de modifier ce diagramme");
         }
 
@@ -162,14 +179,21 @@ export class DiagrammeService {
 
         const diagramme = await this.prisma.diagramme.findUnique({
             where: { id: diagrammeId },
-            include: { projet: true },
+            include: { 
+                projet: {
+                    include: { collaborations: true }
+                } 
+            },
         });
 
         if (!diagramme) {
             throw new NotFoundException('Diagramme introuvable');
         }
 
-        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+        const isOwner = diagramme.projet?.idProprietaire === githubUser.id;
+        const isCollaborator = diagramme.projet?.collaborations.some(c => c.idUtilisateur === githubUser.id);
+
+        if (!isOwner && !isCollaborator) {
             console.warn(`[DiagrammeService] Forbidden: User ${githubUser.id} tried to delete diagram ${diagrammeId} owned by ${diagramme.projet?.idProprietaire}`);
             throw new ForbiddenException("Vous n'avez pas le droit de supprimer ce diagramme");
         }
@@ -204,14 +228,21 @@ export class DiagrammeService {
 
         const diagramme = await this.prisma.diagramme.findUnique({
             where: { id: diagrammeId },
-            include: { projet: true },
+            include: { 
+                projet: {
+                    include: { collaborations: true }
+                } 
+            },
         });
 
         if (!diagramme) {
             throw new NotFoundException('Ce diagramme n\'existe pas ou a été supprimé.');
         }
 
-        if (diagramme.idProprietaire !== githubUser.id) {
+        const isOwner = diagramme.projet?.idProprietaire === githubUser.id;
+        const isCollaborator = diagramme.projet?.collaborations.some(c => c.idUtilisateur === githubUser.id);
+
+        if (!isOwner && !isCollaborator) {
             throw new ForbiddenException('Vous n\'avez pas les droits pour accéder à ce diagramme.');
         }
 
@@ -267,14 +298,21 @@ export class DiagrammeService {
 
         const diagramme = await this.prisma.diagramme.findUnique({
             where: { id: diagrammeId },
-            include: { projet: true },
+            include: { 
+                projet: {
+                    include: { collaborations: true }
+                } 
+            },
         });
 
         if (!diagramme) {
             throw new NotFoundException('Diagramme introuvable');
         }
 
-        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+        const isOwner = diagramme.projet?.idProprietaire === githubUser.id;
+        const isCollaborator = diagramme.projet?.collaborations.some(c => c.idUtilisateur === githubUser.id);
+
+        if (!isOwner && !isCollaborator) {
             throw new ForbiddenException("Vous n'avez pas accès à ce diagramme");
         }
 
@@ -326,7 +364,11 @@ export class DiagrammeService {
 
         const diagramme = await this.prisma.diagramme.findUnique({
             where: { id: diagrammeId },
-            include: { projet: true },
+            include: { 
+                projet: {
+                    include: { collaborations: true }
+                } 
+            },
         });
 
         if (!diagramme) {
@@ -334,7 +376,10 @@ export class DiagrammeService {
         }
 
 
-        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+        const isOwner = diagramme.projet?.idProprietaire === githubUser.id;
+        const isCollaborator = diagramme.projet?.collaborations.some(c => c.idUtilisateur === githubUser.id);
+
+        if (!isOwner && !isCollaborator) {
             throw new ForbiddenException("Vous n'avez pas accès à ce diagramme");
         }
 
@@ -412,15 +457,21 @@ export class DiagrammeService {
 
         const diagramme = await this.prisma.diagramme.findUnique({
             where: { id: diagrammeId },
-            include: { projet: true },
+            include: { 
+                projet: {
+                    include: { collaborations: true }
+                } 
+            },
         });
 
         if (!diagramme) {
             throw new NotFoundException('Diagramme introuvable');
         }
 
+        const isOwner = diagramme.projet?.idProprietaire === githubUser.id;
+        const isCollaborator = diagramme.projet?.collaborations.some(c => c.idUtilisateur === githubUser.id);
 
-        if (diagramme.projet?.idProprietaire !== githubUser.id) {
+        if (!isOwner && !isCollaborator) {
             throw new ForbiddenException("Vous n'avez pas le droit de sauvegarder ce diagramme");
         }
 

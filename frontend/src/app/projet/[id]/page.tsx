@@ -147,9 +147,10 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             setProjet(data);
 
             // Auto-open create dialog if no diagrams
-            if (data.diagrammes.length === 0) {
+            if (data.diagrammes.length === 0 && !initialSelectionDoneRef.current) {
+                initialSelectionDoneRef.current = true;
                 setIsCreateDialogOpen(true);
-            } else if (!initialSelectionDoneRef.current) {
+            } else if (data.diagrammes.length > 0 && !initialSelectionDoneRef.current) {
                 initialSelectionDoneRef.current = true;
                 // Select the first diagram by default
                 setSelectedDiagramId(data.diagrammes[0].id);
@@ -165,6 +166,13 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
     useEffect(() => {
         if (projetId && user) {
             fetchProjet();
+            
+            // Polling automatique pour les nouveaux diagrammes (ex: créés par d'autres collaborateurs)
+            const intervalId = setInterval(() => {
+                fetchProjet();
+            }, 5000); // 5 secondes
+            
+            return () => clearInterval(intervalId);
         }
     }, [projetId, user, fetchProjet]);
 
@@ -426,6 +434,26 @@ export default function ProjetPage({ params }: { params: Promise<{ id: string }>
             setRequestLoading(false);
         }
     };
+
+    if (accessDenied && !inviteToken) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-[#0f0f11] text-white">
+                <div className="bg-[#1a1a1f] p-8 rounded-xl border border-[var(--border-subtle)] text-center max-w-md">
+                    <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Lock size={32} />
+                    </div>
+                    <h1 className="text-2xl font-bold mb-3">Accès refusé</h1>
+                    <p className="text-zinc-400 mb-6 font-medium">Vous n\'avez pas la permission d\'éditer ce projet. Si vous pensez qu\'il s\'agit d\'une erreur, veuillez demander une invitation au propriétaire.</p>
+                    <button 
+                        onClick={() => router.push('/dashboard')} 
+                        className="px-6 py-2.5 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] transition-colors rounded-lg font-medium"
+                    >
+                        Retour au tableau de bord
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading || !projet) {
         return (

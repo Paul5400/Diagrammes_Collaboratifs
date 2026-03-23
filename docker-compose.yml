@@ -19,8 +19,8 @@ services:
       context: ./backend
       dockerfile: build_docker/Dockerfile
     ports:
-      - '3002:3001' # API NestJS
-      - '3032:3032' # Hocuspocus WebSocket
+      - '${BACKEND_PORT:-3002}:3001' # API NestJS
+      - '${WEBSOCKET_PORT:-3032}:3032' # Hocuspocus WebSocket
     volumes:
       - ./backend:/app:delegated
       - back-node-modules:/app/node_modules
@@ -92,7 +92,7 @@ services:
   diagrammer.db:
     image: postgres:16-alpine
     ports:
-      - '15432:5432'
+      - '${POSTGRES_PORT:-15432}:5432'
     networks:
       - diagrammer.net
     env_file:
@@ -105,19 +105,19 @@ services:
     image: redis:7-alpine
     command: redis-server --appendonly yes
     ports:
-      - "16379:6379"
+      - "${REDIS_PORT:-16379}:6379"
     networks:
       - diagrammer.net
     volumes:
       - redis-data:/data
     restart: unless-stopped
 
-  adminer:
-    image: adminer
-    ports:
-      - '${ADMINER_PORT:-8080}:8080'
-    networks:
-      - diagrammer.net
-    depends_on:
-      - diagrammer.db
-    restart: unless-stopped
+  # adminer:
+  #   image: adminer
+  #   ports:
+  #     - '${ADMINER_PORT:-8080}:8080'
+  #   networks:
+  #     - diagrammer.net
+  #   depends_on:
+  #     - diagrammer.db
+  #   restart: unless-stopped

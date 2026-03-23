@@ -92,4 +92,18 @@ export class DiagrammeController {
         const githubId = (req as any).user?.sub;
         return this.diagrammeService.getVersionAtCommit(id, sha, githubId);
     }
+
+    /**
+     * POST /diagrammes/:id/save-github
+     * Sauvegarder le diagramme sur GitHub
+     */
+    @Post(':id/save-github')
+    async saveToGithub(
+        @Req() req: FastifyRequest,
+        @Param('id') id: string,
+        @Body() body: { contenu: string },
+    ) {
+        const githubId = (req as any).user?.sub;
+        return this.diagrammeService.saveToGithub(id, githubId, body.contenu);
+    }
 }

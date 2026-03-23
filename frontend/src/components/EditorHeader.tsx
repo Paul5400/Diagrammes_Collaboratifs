@@ -143,20 +143,6 @@ export function EditorHeader(props: EditorHeaderProps) {
 
         {headerChildren}
 
-        <div className="flex -space-x-2 mr-2">
-          {[1, 2].map((userAvatarPlaceholderIndex) => (
-            <div
-              key={userAvatarPlaceholderIndex}
-              className="w-7 h-7 rounded-full border-2 border-[#0f0f11] bg-[var(--accent-primary)] flex items-center justify-center text-[10px] text-white"
-            >
-              JD
-            </div>
-          ))}
-          <div className="w-7 h-7 rounded-full border-2 border-[#0f0f11] bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-400">
-            +1
-          </div>
-        </div>
-
         <div ref={shareMenuRef} className="relative">
           <button
             onClick={() => setShareMenuOpen(v => !v)}

@@ -23,6 +23,23 @@ export class DiagrammeService {
     ) { }
 
     /**
+     * Vérifie si un utilisateur a accès à un diagramme donné.
+     */
+    async checkAccess(diagrammeId: string, githubId: string): Promise<{ hasAccess: boolean }> {
+        const diagramme = await this.prisma.diagramme.findUnique({
+            where: { id: diagrammeId },
+        });
+        if (!diagramme) throw new NotFoundException('Diagramme introuvable');
+
+        try {
+            await this.verifyProjetAccess(diagramme.idProjet, githubId);
+            return { hasAccess: true };
+        } catch {
+            return { hasAccess: false };
+        }
+    }
+
+    /**
      * Vérifier que l'utilisateur a accès au projet
      */
     private async verifyProjetAccess(projetId: string, githubId: string) {

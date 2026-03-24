@@ -34,6 +34,15 @@ export class DemandeAccesService {
     return user;
   }
 
+  /**
+   * Vérifie et accepte automatiquement les invitations GitHub en attente.
+   * (Stub — à implémenter si nécessaire)
+   */
+  async verifierEtAccepterInvitationsGitHub(githubId: string) {
+    this.logger.log(`Vérification des invitations GitHub pour ${githubId} (non implémenté)`);
+    return { message: 'Aucune invitation à traiter' };
+  }
+
   async create(githubId: string, dto: CreateDemandeAccesDto) {
     const user = await this.getInternalUser(githubId);
     const userId = user.id;

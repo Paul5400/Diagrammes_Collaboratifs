@@ -392,4 +392,29 @@ export class ProjetService {
       errors,
     };
   }
+
+  /**
+   * Supprimer un collaborateur d'un projet.
+   * Seul le propriétaire du projet peut effectuer cette action.
+   */
+  async removeCollaborator(ownerGithubId: string, projectId: string, collaboratorId: string) {
+    const owner = await this.userService.findByGithubId(ownerGithubId);
+    if (!owner) throw new NotFoundException('Utilisateur introuvable');
+
+    const projet = await this.prisma.projet.findUnique({ where: { id: projectId } });
+    if (!projet) throw new NotFoundException('Projet introuvable');
+
+    if (projet.idProprietaire !== owner.id) {
+      throw new ForbiddenException("Vous n'êtes pas le propriétaire de ce projet");
+    }
+
+    await this.prisma.collaboration.deleteMany({
+      where: {
+        idUtilisateur: collaboratorId,
+        idProjet: projectId,
+      },
+    });
+
+    return { message: 'Collaborateur supprimé avec succès' };
+  }
 }

@@ -624,4 +624,4 @@ Monaco affiche le nouveau contenu
 
 ---
 
-*Documentation générée le 2026-02-05*
+
